@@ -676,6 +676,54 @@
       </article>`).join('');
   }
 
+  // Deck-deal intro: when Selected Work scrolls in, the four project cards
+  // stack at the viewport centre, fan out like a hand of cards, then each
+  // one flies off toward its real spot down the page.
+  if (featuredList && featured.length > 1 && !REDUCED && FINE_POINTER) {
+    const deckIntro = () => {
+      const workSec = doc.getElementById('work');
+      if (!workSec || workSec.getBoundingClientRect().bottom < 0) return; // arrived via deep link, section already behind us
+      const cards = [...featuredList.querySelectorAll('.feature__media')];
+      if (!cards.length) return;
+      const overlay = doc.createElement('div');
+      overlay.className = 'deal-overlay';
+      overlay.setAttribute('aria-hidden', 'true');
+      const clones = featured.map(p => {
+        const img = doc.createElement('img');
+        img.src = encodeURI(p.card.img);
+        img.alt = '';
+        img.className = 'deal-card';
+        img.style.aspectRatio = `${p.card.w} / ${p.card.h}`;
+        overlay.appendChild(img);
+        return img;
+      });
+      doc.body.appendChild(overlay);
+      setTimeout(() => overlay.remove(), 9000); // failsafe if the tab hides mid-animation
+      const mid = (clones.length - 1) / 2;
+      const cx = innerWidth / 2, cy = innerHeight / 2;
+      const fanX = Math.min(150, innerWidth * 0.11);
+      gsap.set(clones, {
+        xPercent: -50, yPercent: -50, x: cx, y: cy,
+        rotation: i => (i - mid) * 6, scale: 0.5, opacity: 0
+      });
+      gsap.timeline({ defaults: { ease: 'power3.out' }, onComplete: () => overlay.remove() })
+        .to(clones, { opacity: 1, scale: 1, duration: 0.4, stagger: 0.06 })
+        .to(clones, {
+          rotation: i => (i - mid) * 17,
+          x: i => cx + (i - mid) * fanX,
+          y: i => cy - Math.abs(i - mid) * 16,
+          duration: 0.55, ease: 'back.out(1.5)'
+        }, '+=0.08')
+        .to(clones, {
+          x: i => { const r = cards[i].getBoundingClientRect(); return r.left + r.width / 2; },
+          y: i => { const r = cards[i].getBoundingClientRect(); return Math.min(innerHeight + 300, r.top + r.height / 2); },
+          rotation: 0, scale: 1.8, opacity: 0,
+          duration: 0.65, stagger: 0.1, ease: 'power2.in'
+        }, '+=0.4');
+    };
+    ScrollTrigger.create({ trigger: '#work', start: 'top 62%', once: true, onEnter: deckIntro });
+  }
+
   /* ---------------- Case study overlay ---------------- */
   const caseRootEl = doc.querySelector('[data-case]');
   const casePanel = caseRootEl.querySelector('.case__panel');

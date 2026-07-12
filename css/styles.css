@@ -220,6 +220,21 @@ strong { font-weight: 640; }
 .btn:hover .btn__arrow { transform: translate(2px, 2px); }
 .btn--fill:hover .btn__arrow { transform: translateY(3px); }
 
+/* ---------- Deck-deal intro (Selected Work) ---------- */
+.deal-overlay {
+  position: fixed; inset: 0;
+  z-index: 55; /* above content, below the header */
+  pointer-events: none;
+}
+.deal-card {
+  position: absolute; left: 0; top: 0;
+  width: clamp(120px, 16vw, 210px);
+  height: auto;
+  border-radius: 14px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+  will-change: transform;
+}
+
 /* ---------- Ambient starfield ---------- */
 .ambient {
   position: fixed; inset: 0;
