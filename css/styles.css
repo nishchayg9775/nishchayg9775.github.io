@@ -743,7 +743,9 @@ html.no-motion .swi { transform: none !important; }
   width: 40px; height: 40px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
   border: 1px solid var(--line-strong); color: var(--text-2);
-  font-family: var(--font-mono); font-size: 0.95rem;
+  /* mono font draws arrows off-centre inside its fixed cell; sans centres them */
+  font-family: var(--font-display); font-size: 1.05rem; line-height: 1;
+  padding: 2px 0 0; /* optical centre: the glyph box sits ~1px high */
   transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
 }
 .rail__btn:hover { background: var(--text); color: var(--bg); border-color: var(--text); }
@@ -854,7 +856,8 @@ html.sfx-off .sound-toggle__mute { display: block; }
   position: absolute; top: 50%; transform: translateY(-50%); z-index: 3;
   width: 56px; height: 56px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
-  font-family: var(--font-mono); font-size: 1.05rem;
+  font-family: var(--font-display); font-size: 1.15rem; line-height: 1;
+  padding: 2px 0 0; /* optical centre */
   color: #ede9e0;
   background: rgba(16, 16, 20, 0.6);
   border: 1px solid rgba(237, 233, 224, 0.2);
