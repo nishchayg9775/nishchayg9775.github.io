@@ -327,7 +327,8 @@
     constructor(canvas, animated) {
       this.canvas = canvas;
       this.ctx = canvas.getContext('2d');
-      this.dpr = Math.min(2, window.devicePixelRatio || 1);
+      // background dots don't need retina crispness; 1.25 halves the pixel work
+      this.dpr = Math.min(1.25, window.devicePixelRatio || 1);
       this.animated = animated;
       this.mouse = { x: -9999, y: -9999 };
       this.paused = false;
@@ -468,7 +469,7 @@
       if (!vw || !vh) { setTimeout(() => this.build(), 300); return; } // layout not ready yet
       this.w = this.canvas.width = Math.round(vw * this.dpr);
       this.h = this.canvas.height = Math.round(vh * this.dpr);
-      const count = Math.min(2400, Math.max(900, Math.round((vw * vh) / 420)));
+      const count = Math.min(1500, Math.max(700, Math.round((vw * vh) / 620)));
       this.pts = Array.from({ length: count }, () => ({
         x: (Math.random() - 0.5) * 3, y: (Math.random() - 0.5) * 3, z: (Math.random() - 0.5) * 3,
         tx: 0, ty: 0, tz: 0, vx: 0, vy: 0, vz: 0,
@@ -478,6 +479,12 @@
         seed: Math.random() * 6.2832,
         ox: 0, oy: 0
       }));
+      // colour buckets: one fillStyle per group instead of one per particle
+      this.buckets = [
+        this.pts.filter(p => p.hue < 0.42),
+        this.pts.filter(p => p.hue >= 0.42 && p.hue < 0.74),
+        this.pts.filter(p => p.hue >= 0.74)
+      ];
       this.stars = Array.from({ length: 80 }, () => ({
         x: Math.random() * this.w, y: Math.random() * this.h,
         s: (0.5 + Math.random() * 1.2) * this.dpr, tw: Math.random() * 6.2832
@@ -551,40 +558,43 @@
       const S = Math.min(this.w, this.h) * 0.36;
       const persp = 3.4;
       const r2 = this.mouseR * this.mouseR;
-      for (const p of pts) {
-        if (t > p.delay) {
-          p.vx = (p.vx + (p.tx - p.x) * p.k) * 0.86;
-          p.vy = (p.vy + (p.ty - p.y) * p.k) * 0.86;
-          p.vz = (p.vz + (p.tz - p.z) * p.k) * 0.86;
-          p.x += p.vx; p.y += p.vy; p.z += p.vz;
+      const colors = [this.accent, this.soft, this.dotColor];
+      for (let b = 0; b < 3; b++) {
+        ctx.fillStyle = colors[b]; // one style per bucket, not per particle
+        for (const p of this.buckets[b]) {
+          if (t > p.delay) {
+            p.vx = (p.vx + (p.tx - p.x) * p.k) * 0.86;
+            p.vy = (p.vy + (p.ty - p.y) * p.k) * 0.86;
+            p.vz = (p.vz + (p.tz - p.z) * p.k) * 0.86;
+            p.x += p.vx; p.y += p.vy; p.z += p.vz;
+          }
+          // rotate Y, then tilt X, then perspective-project
+          const X = p.x * cy + p.z * sy;
+          const Z0 = p.z * cy - p.x * sy;
+          const Y = p.y * cx - Z0 * sx;
+          const Z = p.y * sx + Z0 * cx;
+          const sc = persp / (persp + Z);
+          let px = midX + X * S * sc;
+          let py = midY + Y * S * sc;
+          // cursor repel, eased
+          const mx = px + p.ox - mouse.x, my = py + p.oy - mouse.y;
+          const d2 = mx * mx + my * my;
+          let txo = 0, tyo = 0;
+          if (d2 < r2) {
+            const d = Math.sqrt(d2) || 1;
+            const f = (1 - d / this.mouseR) * 34 * this.dpr;
+            txo = (mx / d) * f;
+            tyo = (my / d) * f;
+          }
+          p.ox += (txo - p.ox) * 0.09;
+          p.oy += (tyo - p.oy) * 0.09;
+          px += p.ox; py += p.oy;
+          const depth = Math.max(0, Math.min(1, (sc - 0.62) * 1.6));
+          const tw = 0.7 + 0.3 * Math.sin(t * 0.002 + p.seed);
+          ctx.globalAlpha = this.baseAlpha * (0.18 + 0.82 * depth) * tw;
+          const size = (0.8 + 1.3 * sc) * this.dpr;
+          ctx.fillRect(px, py, size, size);
         }
-        // rotate Y, then tilt X, then perspective-project
-        const X = p.x * cy + p.z * sy;
-        const Z0 = p.z * cy - p.x * sy;
-        const Y = p.y * cx - Z0 * sx;
-        const Z = p.y * sx + Z0 * cx;
-        const sc = persp / (persp + Z);
-        let px = midX + X * S * sc;
-        let py = midY + Y * S * sc;
-        // cursor repel, eased
-        const mx = px + p.ox - mouse.x, my = py + p.oy - mouse.y;
-        const d2 = mx * mx + my * my;
-        let txo = 0, tyo = 0;
-        if (d2 < r2) {
-          const d = Math.sqrt(d2) || 1;
-          const f = (1 - d / this.mouseR) * 34 * this.dpr;
-          txo = (mx / d) * f;
-          tyo = (my / d) * f;
-        }
-        p.ox += (txo - p.ox) * 0.09;
-        p.oy += (tyo - p.oy) * 0.09;
-        px += p.ox; py += p.oy;
-        const depth = Math.max(0, Math.min(1, (sc - 0.62) * 1.6));
-        const tw = 0.7 + 0.3 * Math.sin(t * 0.002 + p.seed);
-        ctx.globalAlpha = this.baseAlpha * (0.18 + 0.82 * depth) * tw;
-        ctx.fillStyle = p.hue < 0.42 ? this.accent : (p.hue < 0.74 ? this.soft : this.dotColor);
-        const size = (0.8 + 1.3 * sc) * this.dpr;
-        ctx.fillRect(px, py, size, size);
       }
       ctx.globalAlpha = 1;
     }
@@ -602,6 +612,7 @@
     // always paint one frame so the field is never blank (touch devices,
     // or the page loading in a hidden tab)
     if (!ambientField.running) ambientField.drawFrame(performance.now());
+    if (location.search.includes('debug')) window.__ambient = ambientField;
   }
 
   /* ---------------- Motion pause (WCAG 2.2.2) ---------------- */
@@ -1014,11 +1025,14 @@
     if (!REDUCED) {
       const MAX_ANGLE = 34, NEAR_Z = 30, FAR_Z = -70;
       const updateTrack = track => {
-        const mid = track.clientWidth / 2;
+        const cw = track.clientWidth;
+        const mid = cw / 2;
         const sl = track.scrollLeft;
+        const lo = sl - cw * 0.6, hi = sl + cw * 1.6; // only touch cards near the viewport
         for (const card of track.children) {
-          const off = card.offsetLeft + card.offsetWidth / 2 - sl - mid;
-          const n = Math.max(-1, Math.min(1, off / mid));
+          const c = card.offsetLeft + card.offsetWidth / 2;
+          if (c < lo || c > hi) continue;
+          const n = Math.max(-1, Math.min(1, (c - sl - mid) / mid));
           const z = NEAR_Z + (FAR_Z - NEAR_Z) * Math.abs(n);
           card.style.transform = `translateZ(${z.toFixed(1)}px) rotateY(${(n * MAX_ANGLE).toFixed(2)}deg)`;
         }

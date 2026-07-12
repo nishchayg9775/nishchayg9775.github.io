@@ -763,7 +763,7 @@ html.no-motion .swi { transform: none !important; }
   height: clamp(220px, 32vh, 330px);
   text-align: left;
   transform-style: preserve-3d;
-  will-change: transform;
+  /* no will-change here: 576 cards × forced GPU layers made page scroll crawl */
   border-radius: var(--radius-md);
 }
 /* natural aspect ratio via --ar; wide banners cap width and letterbox — never crop */
