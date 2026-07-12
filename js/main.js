@@ -317,14 +317,12 @@
   }
   const heroCanvas = doc.querySelector('[data-hero-canvas]');
   let heroField = null;
-  if (heroCanvas && !REDUCED) {
-    // animated field only on fine pointers; a still field on touch (no battery cost)
-    heroField = new HeroField(heroCanvas, FINE_POINTER);
-    if (FINE_POINTER) heroField.toggle();
-    else heroField.drawFrame(0);
-  }
+  // hero grid field retired — the site-wide morphing particle field owns the
+  // background now (two dot systems in the hero fought each other visually)
 
-  /* ---------------- Ambient starfield — site-wide, infinite, interactive ---------------- */
+  /* ---------------- Ambient particle field — scroll-morphing 3D shapes ----------------
+     Thousands of dots form a 3D shape per section; scrolling morphs the cloud
+     into the next shape while it slowly rotates. Cursor pushes particles away. */
   class AmbientField {
     constructor(canvas, animated) {
       this.canvas = canvas;
@@ -335,6 +333,10 @@
       this.paused = false;
       this.running = false;
       this.scroll = window.scrollY || 0;
+      this.lastScroll = this.scroll;
+      this.spin = 0;
+      this.spinVel = 0.0032;
+      this.frameN = 0;
       this.refreshColors();
       this.build();
       let rt;
@@ -342,24 +344,123 @@
         clearTimeout(rt);
         rt = setTimeout(() => { this.build(); if (!this.running) this.drawFrame(performance.now()); }, 150);
       }, { passive: true });
+      window.addEventListener('scroll', () => { this.scroll = window.scrollY; }, { passive: true });
       if (animated) {
         window.addEventListener('mousemove', e => {
           this.mouse.x = e.clientX * this.dpr;
           this.mouse.y = e.clientY * this.dpr;
         }, { passive: true });
         window.addEventListener('mouseout', () => { this.mouse.x = -9999; this.mouse.y = -9999; });
-        window.addEventListener('scroll', () => { this.scroll = window.scrollY; }, { passive: true });
         doc.addEventListener('visibilitychange', () => this.toggle());
       }
     }
     refreshColors() {
       const cs = getComputedStyle(root);
       this.accent = cs.getPropertyValue('--accent').trim();
+      this.soft = cs.getPropertyValue('--hero-gold').trim() || '#9fd0ff';
       const dark = root.dataset.theme === 'dark';
-      this.dotColor = dark ? '242, 244, 248' : '16, 20, 29';
-      this.lineColor = dark ? '122, 180, 255' : '30, 79, 216';
-      this.baseAlpha = dark ? 0.5 : 0.42;
+      this.dotColor = dark ? 'rgb(242, 244, 248)' : 'rgb(16, 20, 29)';
+      this.baseAlpha = dark ? 0.85 : 0.7;
       if (!this.running && this.pts) this.drawFrame(performance.now());
+    }
+    /* procedural 3D point clouds in roughly unit space */
+    shapePoints(kind, n) {
+      const pts = [];
+      const R = Math.random;
+      if (kind.startsWith('text:')) {
+        const str = kind.slice(5);
+        const oc = doc.createElement('canvas');
+        const s = 220;
+        oc.width = Math.round(s * Math.max(1, str.length * 0.66));
+        oc.height = s;
+        const c2 = oc.getContext('2d');
+        c2.font = `900 ${Math.round(s * 0.78)}px Arial, sans-serif`;
+        c2.textAlign = 'center';
+        c2.textBaseline = 'middle';
+        c2.fillStyle = '#fff';
+        c2.fillText(str, oc.width / 2, s * 0.56);
+        const img = c2.getImageData(0, 0, oc.width, oc.height).data;
+        const cand = [];
+        for (let y = 0; y < oc.height; y += 2) {
+          for (let x = 0; x < oc.width; x += 2) {
+            if (img[(y * oc.width + x) * 4 + 3] > 128) cand.push([x, y]);
+          }
+        }
+        const spread = Math.min(1.7, (oc.width / oc.height) * 0.92);
+        for (let i = 0; i < n; i++) {
+          const [x, y] = cand[(R() * cand.length) | 0] || [oc.width / 2, s / 2];
+          pts.push({
+            x: (x / oc.width - 0.5) * 2 * spread,
+            y: (y / oc.height - 0.5) * 1.15,
+            z: (R() - 0.5) * 0.2
+          });
+        }
+        return pts;
+      }
+      for (let i = 0; i < n; i++) {
+        let p;
+        switch (kind) {
+          case 'sphere': {
+            const t = Math.acos(1 - 2 * R()), ph = R() * 6.2832, r = 0.9 + R() * 0.08;
+            p = { x: Math.sin(t) * Math.cos(ph) * r, y: Math.cos(t) * r, z: Math.sin(t) * Math.sin(ph) * r };
+            break;
+          }
+          case 'cube': {
+            const f = (R() * 6) | 0, a = R() * 2 - 1, b = R() * 2 - 1, s = 0.76;
+            p = [
+              { x: s, y: a * s, z: b * s }, { x: -s, y: a * s, z: b * s },
+              { x: a * s, y: s, z: b * s }, { x: a * s, y: -s, z: b * s },
+              { x: a * s, y: b * s, z: s }, { x: a * s, y: b * s, z: -s }
+            ][f];
+            break;
+          }
+          case 'torus': {
+            const u = R() * 6.2832, v = R() * 6.2832, T = 0.68, r = 0.27;
+            p = { x: (T + r * Math.cos(v)) * Math.cos(u), y: r * Math.sin(v), z: (T + r * Math.cos(v)) * Math.sin(u) };
+            break;
+          }
+          case 'funnel': {
+            const t = R(), ang = R() * 6.2832, rad = 0.15 + (1 - t) * 0.85;
+            p = { x: Math.cos(ang) * rad, y: 0.9 - t * 1.8, z: Math.sin(ang) * rad };
+            break;
+          }
+          case 'helix': {
+            const t = R(), ang = t * 6.2832 * 3;
+            p = {
+              x: Math.cos(ang) * 0.72 + (R() - 0.5) * 0.12,
+              y: (t - 0.5) * 1.9,
+              z: Math.sin(ang) * 0.72 + (R() - 0.5) * 0.12
+            };
+            break;
+          }
+          case 'octa': {
+            const x = R() - 0.5, y = R() - 0.5, z = R() - 0.5;
+            const L = (Math.abs(x) + Math.abs(y) + Math.abs(z)) || 1;
+            p = { x: x * 0.95 / L, y: y * 0.95 / L, z: z * 0.95 / L };
+            break;
+          }
+          case 'steps': {
+            const s3 = (R() * 4) | 0;
+            p = {
+              x: -0.78 + s3 * 0.52 + R() * 0.46,
+              y: 0.6 - s3 * 0.4 + (R() - 0.5) * 0.28,
+              z: (R() - 0.5) * 0.5
+            };
+            break;
+          }
+          case 'ring': {
+            const ang = R() * 6.2832, rad = 0.55 + R() * 0.35;
+            p = { x: Math.cos(ang) * rad, y: Math.sin(ang) * rad, z: (R() - 0.5) * 0.14 };
+            break;
+          }
+          default: {
+            const ang = R() * 6.2832, rad = Math.sqrt(R());
+            p = { x: Math.cos(ang) * rad, y: Math.sin(ang) * rad, z: (R() - 0.5) * 0.3 };
+          }
+        }
+        pts.push(p);
+      }
+      return pts;
     }
     build() {
       const vw = innerWidth || doc.documentElement.clientWidth;
@@ -367,17 +468,59 @@
       if (!vw || !vh) { setTimeout(() => this.build(), 300); return; } // layout not ready yet
       this.w = this.canvas.width = Math.round(vw * this.dpr);
       this.h = this.canvas.height = Math.round(vh * this.dpr);
-      const count = Math.min(150, Math.round((vw * vh) / 16000));
+      const count = Math.min(2400, Math.max(900, Math.round((vw * vh) / 420)));
       this.pts = Array.from({ length: count }, () => ({
-        x: Math.random() * this.w,
-        y: Math.random() * this.h,
-        z: 0.25 + Math.random() * 0.75, // depth: drives size, speed, parallax
-        seed: Math.random() * Math.PI * 2,
-        accent: Math.random() < 0.16,
-        ox: 0, oy: 0 // eased cursor-repel offset
+        x: (Math.random() - 0.5) * 3, y: (Math.random() - 0.5) * 3, z: (Math.random() - 0.5) * 3,
+        tx: 0, ty: 0, tz: 0, vx: 0, vy: 0, vz: 0,
+        k: 0.024 + Math.random() * 0.05, // per-particle spring = organic morphs
+        delay: 0,
+        hue: Math.random(),
+        seed: Math.random() * 6.2832,
+        ox: 0, oy: 0
       }));
-      this.linkR = 110 * this.dpr;
-      this.mouseR = 170 * this.dpr;
+      this.stars = Array.from({ length: 80 }, () => ({
+        x: Math.random() * this.w, y: Math.random() * this.h,
+        s: (0.5 + Math.random() * 1.2) * this.dpr, tw: Math.random() * 6.2832
+      }));
+      this.sectionShapes = [
+        ['top', 'text:NG'], ['about', 'sphere'], ['work', 'cube'], ['gallery', 'torus'],
+        ['services', 'funnel'], ['process', 'helix'], ['skills', 'octa'],
+        ['experience', 'steps'], ['testimonials', 'ring'], ['clients', 'ring'],
+        ['contact', 'text:HELLO']
+      ].map(([id, shape]) => ({ el: doc.getElementById(id), shape })).filter(s => s.el);
+      this.shapeCache = {};
+      this.refreshOffsets();
+      this.shapeIndex = -1;
+      this.updateShape(true);
+      this.mouseR = 140 * this.dpr;
+    }
+    refreshOffsets() {
+      this.offsets = this.sectionShapes.map(s => s.el.offsetTop);
+    }
+    targetsFor(kind) {
+      if (!this.shapeCache[kind]) this.shapeCache[kind] = this.shapePoints(kind, this.pts.length);
+      return this.shapeCache[kind];
+    }
+    activeIndex() {
+      const probe = this.scroll + (innerHeight || 800) * 0.45;
+      let idx = 0;
+      for (let i = 0; i < this.offsets.length; i++) {
+        if (this.offsets[i] <= probe) idx = i;
+      }
+      return idx;
+    }
+    updateShape(instant) {
+      const idx = this.activeIndex();
+      if (idx === this.shapeIndex) return;
+      this.shapeIndex = idx;
+      const targets = this.targetsFor(this.sectionShapes[idx].shape);
+      const now = performance.now();
+      for (let i = 0; i < this.pts.length; i++) {
+        const p = this.pts[i], tg = targets[i];
+        p.tx = tg.x; p.ty = tg.y; p.tz = tg.z;
+        p.delay = instant ? 0 : now + Math.random() * 480; // staggered departure
+        if (instant) { p.x = tg.x; p.y = tg.y; p.z = tg.z; }
+      }
     }
     setPaused(p) { this.paused = p; this.toggle(); }
     toggle() {
@@ -388,53 +531,60 @@
     drawFrame(t) {
       const { ctx, pts, mouse } = this;
       ctx.clearRect(0, 0, this.w, this.h);
-      const time = t * 0.0004;
-      const sy = this.scroll * this.dpr;
-      const drawn = [];
+      // twinkling backdrop stars
+      ctx.fillStyle = this.dotColor;
+      for (const s of this.stars) {
+        ctx.globalAlpha = 0.14 + 0.2 * (0.5 + 0.5 * Math.sin(t * 0.001 + s.tw));
+        ctx.fillRect(s.x, s.y, s.s, s.s);
+      }
+      if (++this.frameN % 90 === 0) this.refreshOffsets(); // layout drifts as media loads
+      this.updateShape(false);
+      // rotation: gentle base spin, nudged faster while scrolling
+      const sv = this.scroll - this.lastScroll;
+      this.lastScroll = this.scroll;
+      this.spinVel += Math.min(0.02, Math.abs(sv) * 0.00002);
+      this.spinVel += (0.0032 - this.spinVel) * 0.05;
+      this.spin += this.spinVel;
+      const cy = Math.cos(this.spin), sy = Math.sin(this.spin);
+      const tilt = 0.3, cx = Math.cos(tilt), sx = Math.sin(tilt);
+      const midX = this.w * 0.66, midY = this.h * 0.52;
+      const S = Math.min(this.w, this.h) * 0.36;
+      const persp = 3.4;
+      const r2 = this.mouseR * this.mouseR;
       for (const p of pts) {
-        // endless sideways drift, wrapped at the edges
-        p.x += 0.04 * p.z * this.dpr;
-        if (p.x > this.w + 10) p.x = -10;
-        // scroll parallax by depth, wrapped vertically
-        let y = (p.y - sy * 0.14 * p.z) % this.h;
-        if (y < 0) y += this.h;
-        // cursor repel, eased so dots glide instead of snapping
-        const mx = p.x + p.ox - mouse.x, my = y + p.oy - mouse.y;
+        if (t > p.delay) {
+          p.vx = (p.vx + (p.tx - p.x) * p.k) * 0.86;
+          p.vy = (p.vy + (p.ty - p.y) * p.k) * 0.86;
+          p.vz = (p.vz + (p.tz - p.z) * p.k) * 0.86;
+          p.x += p.vx; p.y += p.vy; p.z += p.vz;
+        }
+        // rotate Y, then tilt X, then perspective-project
+        const X = p.x * cy + p.z * sy;
+        const Z0 = p.z * cy - p.x * sy;
+        const Y = p.y * cx - Z0 * sx;
+        const Z = p.y * sx + Z0 * cx;
+        const sc = persp / (persp + Z);
+        let px = midX + X * S * sc;
+        let py = midY + Y * S * sc;
+        // cursor repel, eased
+        const mx = px + p.ox - mouse.x, my = py + p.oy - mouse.y;
         const d2 = mx * mx + my * my;
         let txo = 0, tyo = 0;
-        if (d2 < this.mouseR * this.mouseR) {
+        if (d2 < r2) {
           const d = Math.sqrt(d2) || 1;
-          const f = (1 - d / this.mouseR) * 30 * this.dpr;
+          const f = (1 - d / this.mouseR) * 34 * this.dpr;
           txo = (mx / d) * f;
           tyo = (my / d) * f;
         }
-        p.ox += (txo - p.ox) * 0.07;
-        p.oy += (tyo - p.oy) * 0.07;
-        const px = p.x + p.ox, py = y + p.oy;
-        const tw = 0.5 + 0.5 * Math.sin(time * 2 + p.seed * 3);
-        const s = (0.7 + p.z * 1.5) * this.dpr;
-        if (p.accent) { ctx.fillStyle = this.accent; ctx.globalAlpha = 0.3 + 0.5 * tw; }
-        else { ctx.fillStyle = `rgb(${this.dotColor})`; ctx.globalAlpha = this.baseAlpha * p.z * (0.25 + 0.75 * tw); }
-        ctx.beginPath();
-        ctx.arc(px, py, s / 2, 0, 6.2832);
-        ctx.fill();
-        drawn.push({ px, py, z: p.z });
-      }
-      // constellation threads to the cursor
-      if (mouse.x > -9000) {
-        ctx.lineWidth = this.dpr * 0.7;
-        for (const d of drawn) {
-          const dx = d.px - mouse.x, dy = d.py - mouse.y;
-          const dist2 = dx * dx + dy * dy;
-          if (dist2 < this.linkR * this.linkR) {
-            const dist = Math.sqrt(dist2);
-            ctx.strokeStyle = `rgba(${this.lineColor}, ${(1 - dist / this.linkR) * 0.35})`;
-            ctx.beginPath();
-            ctx.moveTo(mouse.x, mouse.y);
-            ctx.lineTo(d.px, d.py);
-            ctx.stroke();
-          }
-        }
+        p.ox += (txo - p.ox) * 0.09;
+        p.oy += (tyo - p.oy) * 0.09;
+        px += p.ox; py += p.oy;
+        const depth = Math.max(0, Math.min(1, (sc - 0.62) * 1.6));
+        const tw = 0.7 + 0.3 * Math.sin(t * 0.002 + p.seed);
+        ctx.globalAlpha = this.baseAlpha * (0.18 + 0.82 * depth) * tw;
+        ctx.fillStyle = p.hue < 0.42 ? this.accent : (p.hue < 0.74 ? this.soft : this.dotColor);
+        const size = (0.8 + 1.3 * sc) * this.dpr;
+        ctx.fillRect(px, py, size, size);
       }
       ctx.globalAlpha = 1;
     }
