@@ -31,7 +31,7 @@
     const dark = root.dataset.theme === 'dark';
     themeToggle.setAttribute('aria-label', dark ? 'Switch to light theme' : 'Switch to dark theme');
     const meta = doc.querySelector('meta[name="theme-color"]');
-    if (meta) meta.content = dark ? '#0a0a0c' : '#f3f0e9';
+    if (meta) meta.content = dark ? '#08080b' : '#eef1f6';
   };
   syncThemeMeta();
 
