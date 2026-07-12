@@ -879,9 +879,109 @@
     soundToggle.setAttribute('aria-pressed', String(SFX.enabled));
     soundToggle.setAttribute('aria-label', SFX.enabled ? 'Mute interface sounds' : 'Unmute interface sounds');
   };
+  /* ---------------- Ambient music — generative, infinite, very quiet ----------------
+     No audio file: a slow four-chord pad synthesized live, looping forever.
+     Follows the same mute toggle and preference as the interface sounds. */
+  const MUSIC = (() => {
+    let ctx = null, master = null, filter = null;
+    let running = false, timer = null, step = 0;
+    const CHORD_SEC = 9;
+    const CHORDS = [
+      [110.00, 164.81, 220.00, 261.63, 329.63], // Am(add9) — home
+      [87.31, 130.81, 174.61, 220.00, 261.63],  // Fmaj7 — warm
+      [98.00, 146.83, 196.00, 246.94, 293.66],  // G — lift
+      [130.81, 196.00, 261.63, 329.63, 392.00]  // C — resolve
+    ];
+    const ensure = () => {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return null;
+      if (!ctx) {
+        ctx = new AC();
+        master = ctx.createGain();
+        master.gain.value = 0.0001;
+        filter = ctx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.value = 900;
+        filter.Q.value = 0.4;
+        const lfo = ctx.createOscillator();     // the pad slowly "breathes"
+        const lfoGain = ctx.createGain();
+        lfo.frequency.value = 0.03;
+        lfoGain.gain.value = 320;
+        lfo.connect(lfoGain).connect(filter.frequency);
+        lfo.start();
+        filter.connect(master).connect(ctx.destination);
+      }
+      if (ctx.state === 'suspended') ctx.resume();
+      return ctx;
+    };
+    const playChord = freqs => {
+      const t = ctx.currentTime;
+      freqs.forEach((f, i) => {
+        const t0 = t + i * 0.35; // notes bloom one after another
+        for (const det of [-2.4, 2.4]) { // two softly detuned voices per note
+          const o = ctx.createOscillator();
+          const g = ctx.createGain();
+          o.type = i < 2 ? 'sine' : 'triangle';
+          o.frequency.value = f;
+          o.detune.value = det;
+          g.gain.setValueAtTime(0.0001, t0);
+          g.gain.exponentialRampToValueAtTime(i < 2 ? 0.05 : 0.028, t0 + 3.2);
+          g.gain.exponentialRampToValueAtTime(0.0001, t0 + CHORD_SEC + 3.5);
+          o.connect(g).connect(filter);
+          o.start(t0);
+          o.stop(t0 + CHORD_SEC + 4);
+        }
+      });
+    };
+    const tick = () => {
+      if (!running) return;
+      playChord(CHORDS[step % CHORDS.length]);
+      step++;
+    };
+    return {
+      get running() { return running; },
+      start() {
+        if (running || !SFX.enabled) return;
+        if (!ensure()) return;
+        running = true;
+        master.gain.cancelScheduledValues(ctx.currentTime);
+        master.gain.setValueAtTime(Math.max(master.gain.value, 0.0001), ctx.currentTime);
+        master.gain.exponentialRampToValueAtTime(0.16, ctx.currentTime + 6); // fade in, stays low
+        tick();
+        timer = setInterval(tick, CHORD_SEC * 1000);
+      },
+      stop() {
+        if (!running) return;
+        running = false;
+        clearInterval(timer);
+        if (!ctx) return;
+        master.gain.cancelScheduledValues(ctx.currentTime);
+        master.gain.setValueAtTime(Math.max(master.gain.value, 0.0001), ctx.currentTime);
+        master.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 1.2);
+      }
+    };
+  })();
+  // browsers only allow audio after a real gesture: first press starts the pad
+  let audioUnlocked = false;
+  const musicKick = () => { audioUnlocked = true; MUSIC.start(); };
+  window.addEventListener('pointerdown', musicKick, { once: true, passive: true });
+  window.addEventListener('keydown', musicKick, { once: true });
+  // silence in hidden tabs; ease back in when the visitor returns
+  doc.addEventListener('visibilitychange', () => {
+    if (doc.hidden) MUSIC.stop();
+    else if (audioUnlocked && SFX.enabled) MUSIC.start();
+  });
+
   if (soundToggle) {
     syncSound();
-    soundToggle.addEventListener('click', () => { SFX.set(!SFX.enabled); syncSound(); SFX.toggle(); });
+    soundToggle.addEventListener('click', () => {
+      SFX.set(!SFX.enabled);
+      syncSound();
+      SFX.toggle();
+      audioUnlocked = true;
+      if (SFX.enabled) MUSIC.start();
+      else MUSIC.stop();
+    });
   }
   // one soft tick per newly-hovered control; cards excluded (too dense)
   let lastHoverEl = null;
