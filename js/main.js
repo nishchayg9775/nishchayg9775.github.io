@@ -42,6 +42,7 @@
       store.set('ng-theme', next);
       syncThemeMeta();
       heroField && heroField.refreshColors();
+      ambientField && ambientField.refreshColors();
     };
     if (doc.startViewTransition && !REDUCED) doc.startViewTransition(apply);
     else apply();
@@ -323,6 +324,136 @@
     else heroField.drawFrame(0);
   }
 
+  /* ---------------- Ambient starfield — site-wide, infinite, interactive ---------------- */
+  class AmbientField {
+    constructor(canvas, animated) {
+      this.canvas = canvas;
+      this.ctx = canvas.getContext('2d');
+      this.dpr = Math.min(2, window.devicePixelRatio || 1);
+      this.animated = animated;
+      this.mouse = { x: -9999, y: -9999 };
+      this.paused = false;
+      this.running = false;
+      this.scroll = window.scrollY || 0;
+      this.refreshColors();
+      this.build();
+      let rt;
+      window.addEventListener('resize', () => {
+        clearTimeout(rt);
+        rt = setTimeout(() => { this.build(); if (!this.running) this.drawFrame(performance.now()); }, 150);
+      }, { passive: true });
+      if (animated) {
+        window.addEventListener('mousemove', e => {
+          this.mouse.x = e.clientX * this.dpr;
+          this.mouse.y = e.clientY * this.dpr;
+        }, { passive: true });
+        window.addEventListener('mouseout', () => { this.mouse.x = -9999; this.mouse.y = -9999; });
+        window.addEventListener('scroll', () => { this.scroll = window.scrollY; }, { passive: true });
+        doc.addEventListener('visibilitychange', () => this.toggle());
+      }
+    }
+    refreshColors() {
+      const cs = getComputedStyle(root);
+      this.accent = cs.getPropertyValue('--accent').trim();
+      const dark = root.dataset.theme === 'dark';
+      this.dotColor = dark ? '242, 244, 248' : '16, 20, 29';
+      this.lineColor = dark ? '122, 180, 255' : '30, 79, 216';
+      this.baseAlpha = dark ? 0.5 : 0.42;
+      if (!this.running && this.pts) this.drawFrame(performance.now());
+    }
+    build() {
+      const vw = innerWidth || doc.documentElement.clientWidth;
+      const vh = innerHeight || doc.documentElement.clientHeight;
+      if (!vw || !vh) { setTimeout(() => this.build(), 300); return; } // layout not ready yet
+      this.w = this.canvas.width = Math.round(vw * this.dpr);
+      this.h = this.canvas.height = Math.round(vh * this.dpr);
+      const count = Math.min(150, Math.round((vw * vh) / 16000));
+      this.pts = Array.from({ length: count }, () => ({
+        x: Math.random() * this.w,
+        y: Math.random() * this.h,
+        z: 0.25 + Math.random() * 0.75, // depth: drives size, speed, parallax
+        seed: Math.random() * Math.PI * 2,
+        accent: Math.random() < 0.16,
+        ox: 0, oy: 0 // eased cursor-repel offset
+      }));
+      this.linkR = 110 * this.dpr;
+      this.mouseR = 170 * this.dpr;
+    }
+    setPaused(p) { this.paused = p; this.toggle(); }
+    toggle() {
+      const should = this.animated && !this.paused && !doc.hidden;
+      if (should && !this.running) { this.running = true; this.raf = requestAnimationFrame(t => this.frame(t)); }
+      if (!should) { this.running = false; cancelAnimationFrame(this.raf); }
+    }
+    drawFrame(t) {
+      const { ctx, pts, mouse } = this;
+      ctx.clearRect(0, 0, this.w, this.h);
+      const time = t * 0.0004;
+      const sy = this.scroll * this.dpr;
+      const drawn = [];
+      for (const p of pts) {
+        // endless sideways drift, wrapped at the edges
+        p.x += 0.04 * p.z * this.dpr;
+        if (p.x > this.w + 10) p.x = -10;
+        // scroll parallax by depth, wrapped vertically
+        let y = (p.y - sy * 0.14 * p.z) % this.h;
+        if (y < 0) y += this.h;
+        // cursor repel, eased so dots glide instead of snapping
+        const mx = p.x + p.ox - mouse.x, my = y + p.oy - mouse.y;
+        const d2 = mx * mx + my * my;
+        let txo = 0, tyo = 0;
+        if (d2 < this.mouseR * this.mouseR) {
+          const d = Math.sqrt(d2) || 1;
+          const f = (1 - d / this.mouseR) * 30 * this.dpr;
+          txo = (mx / d) * f;
+          tyo = (my / d) * f;
+        }
+        p.ox += (txo - p.ox) * 0.07;
+        p.oy += (tyo - p.oy) * 0.07;
+        const px = p.x + p.ox, py = y + p.oy;
+        const tw = 0.5 + 0.5 * Math.sin(time * 2 + p.seed * 3);
+        const s = (0.7 + p.z * 1.5) * this.dpr;
+        if (p.accent) { ctx.fillStyle = this.accent; ctx.globalAlpha = 0.3 + 0.5 * tw; }
+        else { ctx.fillStyle = `rgb(${this.dotColor})`; ctx.globalAlpha = this.baseAlpha * p.z * (0.25 + 0.75 * tw); }
+        ctx.beginPath();
+        ctx.arc(px, py, s / 2, 0, 6.2832);
+        ctx.fill();
+        drawn.push({ px, py, z: p.z });
+      }
+      // constellation threads to the cursor
+      if (mouse.x > -9000) {
+        ctx.lineWidth = this.dpr * 0.7;
+        for (const d of drawn) {
+          const dx = d.px - mouse.x, dy = d.py - mouse.y;
+          const dist2 = dx * dx + dy * dy;
+          if (dist2 < this.linkR * this.linkR) {
+            const dist = Math.sqrt(dist2);
+            ctx.strokeStyle = `rgba(${this.lineColor}, ${(1 - dist / this.linkR) * 0.35})`;
+            ctx.beginPath();
+            ctx.moveTo(mouse.x, mouse.y);
+            ctx.lineTo(d.px, d.py);
+            ctx.stroke();
+          }
+        }
+      }
+      ctx.globalAlpha = 1;
+    }
+    frame(t) {
+      if (!this.running) return;
+      this.drawFrame(t);
+      this.raf = requestAnimationFrame(tt => this.frame(tt));
+    }
+  }
+  const ambientCanvas = doc.querySelector('[data-ambient]');
+  let ambientField = null;
+  if (ambientCanvas && !REDUCED) {
+    ambientField = new AmbientField(ambientCanvas, FINE_POINTER);
+    if (FINE_POINTER) ambientField.toggle();
+    // always paint one frame so the field is never blank (touch devices,
+    // or the page loading in a hidden tab)
+    if (!ambientField.running) ambientField.drawFrame(performance.now());
+  }
+
   /* ---------------- Motion pause (WCAG 2.2.2) ---------------- */
   const motionToggle = doc.querySelector('[data-motion-toggle]');
   let marqueeTween = null;
@@ -336,6 +467,7 @@
       motionToggle.setAttribute('aria-label', motionPaused ? 'Resume animations' : 'Pause animations');
       if (marqueeTween) motionPaused ? marqueeTween.pause() : marqueeTween.play();
       heroField && heroField.setPaused(motionPaused);
+      ambientField && ambientField.setPaused(motionPaused);
     });
   }
 
