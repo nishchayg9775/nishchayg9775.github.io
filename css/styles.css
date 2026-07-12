@@ -1253,8 +1253,9 @@ html.no-motion [data-reveal] { opacity: 1; transform: none; }
 }
 .s-hero__title--bubbles {
   display: flex; flex-direction: column; align-items: flex-start;
-  gap: clamp(8px, 1.4vw, 18px);
-  font-size: clamp(2.5rem, 8.8vw, 8.6rem);
+  gap: clamp(6px, 1.2vh, 18px);
+  /* capped by viewport height too, so sub + stats stay above the fold */
+  font-size: clamp(2.2rem, min(8.8vw, 10.5vh), 8.6rem);
   line-height: 1;
 }
 .s-hero__title--bubbles .s-hero__line {
@@ -1348,5 +1349,12 @@ html.no-motion [data-reveal] { opacity: 1; transform: none; }
   .s-hero__title--bubbles { font-size: clamp(2.1rem, 12.5vw, 4.4rem); }
   .s-hero__connector { display: none; }
   .s-hero__bubble { font-size: 10px; }
+}
+/* short laptop viewports: tighten the hero's vertical rhythm */
+@media (max-height: 840px) and (min-width: 641px) {
+  .s-hero__meta { margin-bottom: 14px; }
+  .s-hero__foot { margin-top: 16px; }
+  .s-hero__bottom { margin-top: 14px; padding-block: 14px; }
+  .s-hero__sub { font-size: 0.95rem; line-height: 1.5; }
 }
 [data-theme="light"] .s-hero__pill { box-shadow: 0 14px 40px rgba(30, 24, 14, 0.12); border-color: var(--line-strong); }
