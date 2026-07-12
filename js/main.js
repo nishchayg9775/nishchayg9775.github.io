@@ -871,6 +871,7 @@
       open:   () => blip(420, 0.16, 'sine', 0.05, 880),
       close:  () => blip(860, 0.13, 'sine', 0.04, 430),
       flip:   () => blip(980, 0.045, 'triangle', 0.032),
+      rail:   () => blip(720 + Math.random() * 140, 0.032, 'sine', 0.013, 900),
       toggle: () => blip(520, 0.09, 'triangle', 0.035, 780)
     };
   })();
@@ -1115,6 +1116,25 @@
       setupRailLoop(track);
       recenterRail(track, true);
       track.addEventListener('scroll', () => recenterRail(track), { passive: true });
+    });
+
+    // soft ratchet ticks while a shelf spins — one tick per ~150px travelled
+    let railTickAcc = 0, railTickLast = 0;
+    const railLastSL = new Map();
+    tracks.forEach(track => {
+      railLastSL.set(track, track.scrollLeft);
+      track.addEventListener('scroll', () => {
+        const d = Math.abs(track.scrollLeft - railLastSL.get(track));
+        railLastSL.set(track, track.scrollLeft);
+        if (d > 400) return; // seamless loop-wrap jump, not real movement
+        railTickAcc += d;
+        const now = performance.now();
+        if (railTickAcc > 150 && now - railTickLast > 85) {
+          railTickAcc = 0;
+          railTickLast = now;
+          SFX.rail();
+        }
+      }, { passive: true });
     });
     window.addEventListener('resize', () => {
       tracks.forEach(t => { setupRailLoop(t); recenterRail(t, true); });
