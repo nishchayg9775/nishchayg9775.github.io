@@ -52,13 +52,16 @@
   gsap.registerPlugin(ScrollTrigger);
   let lenis = null;
   if (!REDUCED) {
-    lenis = new Lenis({ duration: 1.15, easing: t => Math.min(1, 1.001 - Math.pow(2, -10 * t)) });
+    // lerp (not duration): touchpads fire continuous small deltas + OS momentum,
+    // and a fixed-duration tween restarts on every event — the page trails the
+    // gesture by seconds. Exponential damping tracks input tightly instead.
+    lenis = new Lenis({ lerp: 0.16 });
     lenis.on('scroll', ScrollTrigger.update);
     gsap.ticker.add(t => lenis.raf(t * 1000));
     gsap.ticker.lagSmoothing(0);
   }
   const scrollTo = target => {
-    if (lenis) lenis.scrollTo(target, { offset: -70, duration: 1.3 });
+    if (lenis) lenis.scrollTo(target, { offset: -70, duration: 1.3, easing: t => Math.min(1, 1.001 - Math.pow(2, -10 * t)) });
     else {
       const el = typeof target === 'string' ? doc.querySelector(target) : target;
       el && el.scrollIntoView({ behavior: REDUCED ? 'auto' : 'smooth' });
