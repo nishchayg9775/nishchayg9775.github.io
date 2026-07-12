@@ -1317,10 +1317,15 @@
     const letters = doc.querySelectorAll('[data-preloader-word] span');
     const state = { v: 0 };
     const minTime = new Promise(res => setTimeout(res, 1700));
-    const loaded = new Promise(res => {
-      if (doc.readyState === 'complete') res();
-      else window.addEventListener('load', res, { once: true });
-    });
+    // window load can take 30s+ with a 583-image gallery; never hold the
+    // door longer than 3.5s — lazy images keep loading behind the intro
+    const loaded = Promise.race([
+      new Promise(res => {
+        if (doc.readyState === 'complete') res();
+        else window.addEventListener('load', res, { once: true });
+      }),
+      new Promise(res => setTimeout(res, 3500))
+    ]);
 
     gsap.fromTo(letters, { yPercent: 120 }, { yPercent: 0, duration: 0.85, stagger: 0.055, ease: 'power4.out' });
     gsap.to(state, {
@@ -1331,6 +1336,9 @@
       }
     });
 
+    let introRan = false;
+    const startIntro = () => { if (introRan) return; introRan = true; heroIntro(); };
+
     Promise.all([minTime, loaded]).then(() => {
       const out = gsap.timeline({
         onComplete: () => { preloader.remove(); lockScroll(false); }
@@ -1338,8 +1346,19 @@
       out.to(letters, { yPercent: -120, duration: 0.6, stagger: 0.035, ease: 'power3.in' })
         .to('.preloader__meta, .preloader__bar', { opacity: 0, duration: 0.3 }, '<0.2')
         .to(preloader, { clipPath: 'inset(0 0 100% 0)', duration: 0.85, ease: 'power4.inOut' }, '-=0.15')
-        .add(heroIntro, '-=0.55');
+        .add(startIntro, '-=0.55');
     });
+
+    // last-resort: GSAP's ticker sleeps in hidden tabs, so if the exit
+    // animation never got to run, rip the loader off without ceremony
+    setTimeout(() => {
+      if (preloader.isConnected) {
+        gsap.killTweensOf(preloader);
+        preloader.remove();
+        lockScroll(false);
+        startIntro();
+      }
+    }, 9000);
   };
   runPreloader();
 })();
