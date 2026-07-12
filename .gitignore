@@ -1,0 +1,8 @@
+# Raw portfolio source tree (~1 GB of originals) — the site serves
+# optimized copies from assets/ instead. Keep originals backed up separately.
+Portfolio/
+
+__pycache__/
+*.pyc
+Thumbs.db
+.DS_Store

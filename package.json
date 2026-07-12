@@ -1,0 +1,11 @@
+{
+  "name": "nishchay-gupta-portfolio",
+  "version": "1.0.0",
+  "description": "Portfolio site for Nishchay Gupta, senior graphic designer. Static site, no build step.",
+  "private": true,
+  "scripts": {
+    "serve": "python -m http.server 4173",
+    "build:gallery": "python scripts/build_gallery.py",
+    "check": "python scripts/check_assets.py"
+  }
+}
