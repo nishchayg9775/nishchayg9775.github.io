@@ -120,9 +120,12 @@
 /* ---------- Reset / base ---------- */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-html { scroll-behavior: smooth; overflow-x: clip; }
+/* no scroll-behavior: smooth here — Lenis writes scrollTop every frame and
+   the browser would re-animate each write whenever the lenis-smooth class is
+   absent (idle writes, refresh restores), double-smoothing into seconds of
+   drift. Anchor glides go through lenis.scrollTo / scrollIntoView instead. */
+html { overflow-x: clip; }
 html.lenis { height: auto; }
-.lenis.lenis-smooth { scroll-behavior: auto; }
 
 body {
   font-family: var(--font-display);
@@ -340,8 +343,10 @@ html.has-cursor, html.has-cursor a, html.has-cursor button { cursor: none; }
   position: fixed; top: 0; left: 0; right: 0; z-index: var(--z-header);
   display: flex; align-items: center; justify-content: space-between;
   padding: 18px var(--gutter);
+  /* backdrop-filter deliberately not transitioned: animating blur radius
+     re-filters the full-width strip every frame mid-scroll */
   transition: transform 0.5s var(--ease-out), background-color 0.4s ease,
-              backdrop-filter 0.4s ease, border-color 0.4s ease, padding 0.4s ease;
+              border-color 0.4s ease, padding 0.4s ease;
   border-bottom: 1px solid transparent;
 }
 .header.is-scrolled {
@@ -776,7 +781,9 @@ html.no-motion .swi { transform: none !important; }
   border-radius: var(--radius-md); overflow: hidden;
   background: var(--bg-3);
   border: 1px solid var(--line);
-  will-change: transform;
+  /* no will-change: same 576-cards-×-GPU-layers trap as .g-card above —
+     the coverflow's inline 3D transforms already promote the few cards
+     that need it */
 }
 .g-card__media img {
   width: 100%; height: 100%; object-fit: contain; display: block;

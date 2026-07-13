@@ -81,6 +81,38 @@ OPT_MAX_DIM = 2400   # beyond this, browsers pay decode cost for nothing
 OPT_MAX_MB = 0.8     # originals above this get re-encoded instead of copied
 OPT_TARGET = 2000
 
+THUMB_TARGET = 800   # rail cards render ≤330px tall; 800px covers 2x DPR
+THUMB_QUALITY = 78
+
+
+def flatten_rgb(im: Image.Image) -> Image.Image:
+    if im.mode in ("RGBA", "LA", "P"):
+        bg = Image.new("RGB", im.size, (255, 255, 255))
+        bg.paste(im.convert("RGBA"), mask=im.convert("RGBA").split()[-1])
+        return bg
+    return im.convert("RGB")
+
+
+def make_thumb(src: pathlib.Path, item_id: str):
+    """Small JPEG for the gallery rails; the lightbox keeps the full-size
+    asset. Returns [url, w, h] or None when the original is already small
+    (or an animated GIF, which the rails reuse as-is)."""
+    if src.suffix.lower() == ".gif":
+        return None
+    w, h = img_dims(src)
+    if max(w, h) <= THUMB_TARGET:
+        return None
+    tdir = OUT / "thumb"
+    tdir.mkdir(parents=True, exist_ok=True)
+    dst = tdir / f"{item_id}.jpg"
+    if not dst.exists():
+        with Image.open(src) as im:
+            im = ImageOps.exif_transpose(im)
+            im.thumbnail((THUMB_TARGET, THUMB_TARGET), Image.LANCZOS)
+            flatten_rgb(im).save(dst, "JPEG", quality=THUMB_QUALITY, optimize=True)
+    tw, th = img_dims(dst)
+    return [rel_url(dst), tw, th]
+
 
 def publish_image(src: pathlib.Path, item_id: str):
     """Every referenced image gets a web copy under assets/gallery/img/ so a
@@ -173,26 +205,38 @@ def main():
 
             if ext in IMG_EXT:
                 src, w, h = publish_image(f, item_id)
-                items.append({
+                item = {
                     "id": item_id, "cat": key, "title": title,
                     "cover": [rel_url(src), w, h],
-                })
+                }
+                thumb = make_thumb(src, item_id)
+                if thumb:
+                    item["thumb"] = thumb
+                items.append(item)
             elif ext == ".heic":
                 dst = OUT / f"{item_id}.jpg"
                 convert_heic(f, dst)
                 w, h = img_dims(dst)
-                items.append({
+                item = {
                     "id": item_id, "cat": key, "title": title,
                     "cover": [rel_url(dst), w, h],
-                })
+                }
+                thumb = make_thumb(dst, item_id)
+                if thumb:
+                    item["thumb"] = thumb
+                items.append(item)
             elif ext == ".pdf":
                 print(f"  PDF: {f.name}", flush=True)
                 pages = render_pdf(f, OUT / item_id)
-                items.append({
+                item = {
                     "id": item_id, "cat": key, "title": title,
                     "cover": [rel_url(pages[0][0]), pages[0][1], pages[0][2]],
                     "pages": [[rel_url(p), w, h] for p, w, h in pages],
-                })
+                }
+                thumb = make_thumb(pages[0][0], item_id)
+                if thumb:
+                    item["thumb"] = thumb
+                items.append(item)
             else:
                 skipped.append(rel_url(f))
 

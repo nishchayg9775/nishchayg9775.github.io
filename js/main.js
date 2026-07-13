@@ -340,7 +340,6 @@
       this.lastScroll = this.scroll;
       this.spin = 0;
       this.spinVel = 0.0032;
-      this.frameN = 0;
       this.refreshColors();
       this.build();
       let rt;
@@ -348,6 +347,18 @@
         clearTimeout(rt);
         rt = setTimeout(() => { this.build(); if (!this.running) this.drawFrame(performance.now()); }, 150);
       }, { passive: true });
+      // section offsets drift as lazy media loads; a ResizeObserver on <body>
+      // catches that after layout settles — never a forced reflow inside the
+      // draw loop (offsetTop mid-frame flushed layout of the whole card DOM)
+      if ('ResizeObserver' in window) {
+        let ot;
+        new ResizeObserver(() => {
+          clearTimeout(ot);
+          ot = setTimeout(() => this.refreshOffsets(), 200);
+        }).observe(doc.body);
+      } else {
+        window.addEventListener('load', () => this.refreshOffsets(), { once: true });
+      }
       window.addEventListener('scroll', () => { this.scroll = window.scrollY; }, { passive: true });
       if (animated) {
         window.addEventListener('mousemove', e => {
@@ -472,7 +483,9 @@
       if (!vw || !vh) { setTimeout(() => this.build(), 300); return; } // layout not ready yet
       this.w = this.canvas.width = Math.round(vw * this.dpr);
       this.h = this.canvas.height = Math.round(vh * this.dpr);
-      const count = Math.min(1500, Math.max(700, Math.round((vw * vh) / 620)));
+      // capped at 1000: the sim + per-particle draw was eating half the frame
+      // budget on integrated-GPU laptops, and Lenis scroll queues behind it
+      const count = Math.min(1000, Math.max(550, Math.round((vw * vh) / 620)));
       this.pts = Array.from({ length: count }, () => ({
         x: (Math.random() - 0.5) * 3, y: (Math.random() - 0.5) * 3, z: (Math.random() - 0.5) * 3,
         tx: 0, ty: 0, tz: 0, vx: 0, vy: 0, vz: 0,
@@ -547,7 +560,6 @@
         ctx.globalAlpha = 0.14 + 0.2 * (0.5 + 0.5 * Math.sin(t * 0.001 + s.tw));
         ctx.fillRect(s.x, s.y, s.s, s.s);
       }
-      if (++this.frameN % 90 === 0) this.refreshOffsets(); // layout drifts as media loads
       this.updateShape(false);
       // rotation: gentle base spin, nudged faster while scrolling
       const sv = this.scroll - this.lastScroll;
@@ -1011,7 +1023,9 @@
   const galList = GAL.items; // lightbox order = rail order (category-major)
 
   const galCardHTML = it => {
-    const [src, w, h] = it.cover;
+    // rails use the small thumb (~800px); the lightbox keeps full resolution.
+    // 583 full-res JPEGs decoding mid-scroll was a major source of wheel lag.
+    const [src, w, h] = it.thumb || it.cover;
     const pageCount = it.pages ? it.pages.length : 1;
     return `
       <button class="g-card" data-gal-open="${esc(it.id)}" data-cursor-view="View"
@@ -1104,11 +1118,15 @@
         }
         st.copies++;
       }
+      // cache layout reads for the hot scroll handlers: geometry only changes
+      // here (cloning) and on resize, which both re-run setupRailLoop
+      st.half = (track.scrollWidth - track.clientWidth) / 2;
+      st.centers = [...track.children].map(c => c.offsetLeft + c.offsetWidth / 2);
     };
     const recenterRail = (track, tight) => {
       const st = loopState.get(track);
       if (!st || !st.setW) return;
-      const drift = track.scrollLeft - (track.scrollWidth - track.clientWidth) / 2;
+      const drift = track.scrollLeft - st.half; // cached: no scrollWidth reflow per scroll event
       if (Math.abs(drift) <= (tight ? st.setW * 0.5 : st.zone)) return;
       const delta = -Math.round(drift / st.setW) * st.setW;
       if (!delta) return;
@@ -1152,12 +1170,18 @@
         const mid = cw / 2;
         const sl = track.scrollLeft;
         const lo = sl - cw * 0.6, hi = sl + cw * 1.6; // only touch cards near the viewport
-        for (const card of track.children) {
-          const c = card.offsetLeft + card.offsetWidth / 2;
+        const st = loopState.get(track);
+        const centers = (st && st.centers) ||
+          [...track.children].map(el => el.offsetLeft + el.offsetWidth / 2);
+        const kids = track.children;
+        for (let i = 0; i < kids.length; i++) {
+          const c = centers[i];
           if (c < lo || c > hi) continue;
+          const card = kids[i];
           const n = Math.max(-1, Math.min(1, (c - sl - mid) / mid));
           const z = NEAR_Z + (FAR_Z - NEAR_Z) * Math.abs(n);
-          card.style.transform = `translateZ(${z.toFixed(1)}px) rotateY(${(n * MAX_ANGLE).toFixed(2)}deg)`;
+          const tf = `translateZ(${z.toFixed(1)}px) rotateY(${(n * MAX_ANGLE).toFixed(2)}deg)`;
+          if (card.style.transform !== tf) card.style.transform = tf;
         }
       };
       const queued = new Set();
@@ -1464,11 +1488,15 @@
 
     Promise.all([minTime, loaded]).then(() => {
       const out = gsap.timeline({
-        onComplete: () => { preloader.remove(); lockScroll(false); }
+        onComplete: () => preloader.remove()
       });
       out.to(letters, { yPercent: -120, duration: 0.6, stagger: 0.035, ease: 'power3.in' })
         .to('.preloader__meta, .preloader__bar', { opacity: 0, duration: 0.3 }, '<0.2')
         .to(preloader, { clipPath: 'inset(0 0 100% 0)', duration: 0.85, ease: 'power4.inOut' }, '-=0.15')
+        // unlock the moment the wipe starts, not after it ends — while Lenis
+        // is stopped every wheel/touchpad event is swallowed, which read as
+        // seconds of dead scroll input right after load
+        .add(() => lockScroll(false), '<')
         .add(startIntro, '-=0.55');
     });
 
