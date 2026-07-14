@@ -55,6 +55,47 @@
   --font-serif: 'Fraunces', Georgia, serif;
   --font-mono: 'Space Mono', 'Courier New', monospace;
 
+  /* Category-wise typography system. Component selectors consume these
+     shared roles instead of inventing local scales. */
+  --type-h1-size: clamp(2.2rem, min(8.8vw, 10.5vh), 8.6rem);
+  --type-h2-size: clamp(2.35rem, 6.1vw, 5.6rem);
+  --type-h3-size: clamp(2.2rem, 4.2vw, 4rem);
+  --type-editorial-size: clamp(2rem, 4.4vw, 4.1rem);
+  --type-title-lg-size: clamp(1.4rem, 2.5vw, 2.5rem);
+  --type-title-md-size: clamp(1.15rem, 2vw, 2rem);
+  --type-card-title-size: clamp(.78rem, .9vw, .875rem);
+  --type-lead-size: clamp(.95rem, 1.12vw, 1.0625rem);
+  --type-body-size: clamp(.8125rem, .86vw, .9rem);
+  --type-support-size: clamp(.72rem, .76vw, .8rem);
+  --type-caption-size: clamp(.64rem, .68vw, .72rem);
+  --type-label-size: clamp(.56rem, .6vw, .625rem);
+  --type-button-size: clamp(.8rem, .84vw, .875rem);
+  --type-nav-size: clamp(.82rem, .88vw, .925rem);
+  --type-menu-size: clamp(2.2rem, 9vw, 4rem);
+  --type-quote-size: clamp(1.75rem, 3.8vw, 3.75rem);
+  --type-stat-size: clamp(1.4rem, 2.35vw, 2.2rem);
+
+  --type-weight-display: 780;
+  --type-weight-section: 750;
+  --type-weight-heading: 700;
+  --type-weight-title: 650;
+  --type-weight-body: 400;
+  --type-weight-button: 620;
+  --type-line-display: .96;
+  --type-line-section: 1;
+  --type-line-heading: 1.05;
+  --type-line-body: 1.65;
+  --type-line-support: 1.55;
+  --type-line-caption: 1.45;
+  --type-line-label: 1.35;
+  --type-track-display: -.025em;
+  --type-track-heading: -.035em;
+  --type-track-title: -.015em;
+  --type-track-body: 0;
+  --type-track-label: .14em;
+  --type-space-label-heading: 12px;
+  --type-space-heading-copy: 16px;
+
   --container: 1500px;
   --gutter: clamp(20px, 4vw, 64px);
   --radius-lg: 22px;
@@ -4536,7 +4577,6 @@ html.sfx-off .sound-toggle__mute { display: block; }
 .services-console__copy > .mono-label { color: var(--accent); }
 .services-console__copy h3 {
   margin-top: 10px;
-  font-size: clamp(1.65rem, 2.35vw, 2.45rem);
   font-size: clamp(1.65rem, 7.4cqi, 2.45rem);
   font-weight: 680;
   font-stretch: 112%;
@@ -5847,3 +5887,378 @@ html.no-motion [data-reveal] { opacity: 1; transform: none; }
   .s-hero__sub { font-size: 0.95rem; line-height: 1.5; }
 }
 [data-theme="light"] .s-hero__pill { box-shadow: 0 14px 40px rgba(30, 24, 14, 0.12); border-color: var(--line-strong); }
+
+/* ============================================================
+   GLOBAL TYPOGRAPHY CONTRACT
+   Category-driven roles for static and JavaScript-rendered copy.
+   Component layout, colour and interaction rules remain untouched.
+   ============================================================ */
+
+/* Primary page heading / H1 */
+.type-h1,
+.s-hero__title,
+.s-hero__title--bubbles {
+  font-family: var(--font-display);
+  font-size: var(--type-h1-size);
+  font-weight: var(--type-weight-display);
+  font-stretch: 120%;
+  line-height: var(--type-line-display);
+  letter-spacing: var(--type-track-display);
+  text-align: left;
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+}
+
+/* Primary section heading / H2 */
+.type-h2,
+.section-head__title,
+.s-contact__title {
+  font-family: var(--font-display);
+  font-size: var(--type-h2-size);
+  font-weight: var(--type-weight-section);
+  font-stretch: 116%;
+  line-height: var(--type-line-section);
+  letter-spacing: var(--type-track-display);
+  color: var(--text);
+  text-align: left;
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+}
+
+/* Portfolio subsection heading / H3 */
+.type-h3,
+.new-work-reel__head h3,
+.story-desk__head h3,
+.deck-room__head h3,
+.rail__title,
+.flyer-slider__title,
+.interior-dossier__title,
+.ai-showcase__title,
+.ai-coverflow__title {
+  font-family: var(--font-display);
+  font-size: var(--type-h3-size);
+  font-weight: var(--type-weight-section);
+  font-stretch: 114%;
+  line-height: var(--type-line-section);
+  letter-spacing: var(--type-track-heading);
+  color: var(--text);
+  text-align: left;
+  text-transform: uppercase;
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+}
+.type-h3 em,
+.new-work-reel__head h3 em,
+.story-desk__head h3 em,
+.deck-room__head h3 em,
+.flyer-slider__title em,
+.interior-dossier__title em,
+.ai-showcase__title em,
+.ai-coverflow__title em {
+  font-family: var(--font-serif);
+  font-weight: 420;
+  letter-spacing: -.015em;
+  text-transform: none;
+}
+
+/* Large editorial chapter heading */
+.type-editorial,
+.about-chapter h3 {
+  font-family: var(--font-display);
+  font-size: var(--type-editorial-size);
+  font-weight: var(--type-weight-title);
+  font-stretch: 110%;
+  line-height: 1.07;
+  letter-spacing: var(--type-track-heading);
+  color: var(--text);
+  text-align: left;
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+}
+
+/* Testimonial and pull-quote text */
+.type-quote,
+.voice blockquote {
+  font-family: var(--font-display);
+  font-size: var(--type-quote-size);
+  font-weight: 610;
+  font-stretch: 108%;
+  line-height: 1.08;
+  letter-spacing: -.04em;
+  color: var(--text);
+  text-align: left;
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+}
+
+/* Active project, overlay and feature headings */
+.type-title-lg,
+.featured-dossier__brief h3,
+.featured-dossier__preview h4,
+.new-work-reel__copy h4,
+.story-desk__brief h4,
+.deck-room__notes h4,
+.interior-dossier__brief h4,
+.services-console__copy h3,
+.skill-atlas__active strong,
+.case-head__title {
+  font-family: var(--font-display);
+  font-size: var(--type-title-lg-size);
+  font-weight: var(--type-weight-heading);
+  font-stretch: 112%;
+  line-height: var(--type-line-heading);
+  letter-spacing: var(--type-track-heading);
+  color: var(--text);
+  text-align: left;
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+}
+
+/* Component and interactive-panel headings */
+.type-title-md,
+.service__title,
+.process-stage__copy strong,
+.skill-module h3,
+.career-entry__trigger > span,
+.footer__cta,
+.case-next__btn,
+.marquee__track span {
+  font-family: var(--font-display);
+  font-size: var(--type-title-md-size);
+  font-weight: var(--type-weight-heading);
+  font-stretch: 110%;
+  line-height: var(--type-line-heading);
+  letter-spacing: var(--type-track-title);
+  text-align: left;
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+}
+
+/* Card and tab titles */
+.type-card-title,
+.card__title,
+.g-card__title,
+.g-card__deck-meta strong,
+.featured-dossier__caption strong,
+.social-tile__meta strong,
+.festival-card__meta strong,
+.thumbnail-card__meta strong,
+.banner-browser__meta strong,
+.flyer-slider__active strong,
+.interior-dossier__series button > strong,
+.interior-dossier__caption strong,
+.ai-coverflow__card-copy strong,
+.deck-room__selector strong,
+.voice-tab strong,
+.lb__title {
+  font-family: var(--font-display);
+  font-size: var(--type-card-title-size);
+  font-weight: var(--type-weight-title);
+  line-height: var(--type-line-caption);
+  letter-spacing: var(--type-track-title);
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+
+/* Lead and section-intro copy */
+.type-lead,
+.s-hero__sub,
+.section-head__note,
+.s-about__head-note,
+.new-work-reel__head > p,
+.story-desk__head > p,
+.deck-room__head > p,
+.interior-dossier__head > p,
+.ai-showcase__intro,
+.s-contact__sub,
+.case-head__sub {
+  font-family: var(--font-display);
+  font-size: var(--type-lead-size);
+  font-weight: var(--type-weight-body);
+  line-height: var(--type-line-body);
+  letter-spacing: var(--type-track-body);
+  color: var(--text-2);
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+
+/* Primary readable body copy */
+.type-body,
+.about-chapter p,
+.featured-dossier__preview > p,
+.new-work-reel__copy p,
+.story-desk__brief > p,
+.deck-room__notes > p,
+.interior-dossier__brief > p,
+.services-console__copy p,
+.service__desc,
+.process-stage__detail,
+.skill-atlas__active p,
+.skill-module li,
+.career-entry__story > p,
+.footer__brand p,
+.case-body p {
+  font-family: var(--font-display);
+  font-size: var(--type-body-size);
+  font-weight: var(--type-weight-body);
+  line-height: var(--type-line-body);
+  letter-spacing: var(--type-track-body);
+  color: var(--text-2);
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+
+/* Supporting descriptions and helper copy */
+.type-support,
+.about-story__head p,
+.rail__note,
+.featured-dossier__footer p,
+.flyer-slider__hint,
+.interior-dossier__index > p,
+.process-board__top p,
+.career-ledger__head p,
+.career-ledger__foot p,
+.voices-stage__head p,
+.footer__meta-line,
+.case-grid dd {
+  font-family: var(--font-display);
+  font-size: var(--type-support-size);
+  font-weight: var(--type-weight-body);
+  line-height: var(--type-line-support);
+  letter-spacing: var(--type-track-body);
+  color: var(--text-2);
+  overflow-wrap: anywhere;
+}
+
+/* Eyebrows, labels, field names and uppercase metadata */
+.type-label,
+:root .mono-label.mono-label,
+.stat__label,
+.filter,
+.card__cat,
+.card__client,
+.g-card__pages,
+.service__tags span,
+.services-console__facts dt,
+.story-desk__brief dt,
+.deck-room__notes dt,
+.interior-dossier__brief dt,
+.career-entry__proof span,
+.voice-tab small,
+.case-grid dt,
+.case-body h4,
+.lb__close,
+.case__close {
+  font-family: var(--font-mono);
+  font-size: var(--type-label-size);
+  font-weight: 400;
+  line-height: var(--type-line-label);
+  letter-spacing: var(--type-track-label);
+  text-transform: uppercase;
+}
+
+/* Captions, secondary metadata and disclaimers */
+.type-caption,
+.about-profile__foot small,
+.about-dossier__facts small,
+.featured-dossier__client,
+.g-card__deck-count small,
+.social-tile__format,
+.festival-card__open,
+.thumbnail-card__ratio,
+.thumbnail-card__open,
+.banner-browser__address,
+.banner-browser__open,
+.ai-coverflow__card-copy small,
+.voice__role,
+.lb__meta,
+.lb__count {
+  font-family: var(--font-display);
+  font-size: var(--type-caption-size);
+  font-weight: var(--type-weight-body);
+  line-height: var(--type-line-caption);
+  letter-spacing: 0;
+}
+
+/* Navigation text */
+.type-nav,
+.header__nav a,
+.footer__link,
+.s-contact__links a {
+  font-family: var(--font-display);
+  font-size: var(--type-nav-size);
+  font-weight: 560;
+  line-height: 1.35;
+  letter-spacing: 0;
+}
+.menu__nav a {
+  font-family: var(--font-display);
+  font-size: var(--type-menu-size);
+  font-weight: var(--type-weight-section);
+  line-height: 1.05;
+  letter-spacing: var(--type-track-heading);
+}
+
+/* Text CTAs and buttons. Icon-only controls keep their optical sizing. */
+.type-button,
+.btn,
+.header__cta,
+.featured-dossier__open,
+.new-work-reel__open,
+.story-desk__open,
+.deck-room__open,
+.services-console__cta,
+.career-ledger__resume {
+  font-family: var(--font-display);
+  font-size: var(--type-button-size);
+  font-weight: var(--type-weight-button);
+  line-height: 1.25;
+  letter-spacing: .005em;
+}
+
+/* Repeated progress and status numerals */
+.type-stat,
+.stat__num,
+.about-story__count strong,
+.process-board__status strong,
+.career-ledger__status strong,
+.voices-stage__count strong,
+.career-entry__proof strong {
+  font-family: var(--font-display);
+  font-size: var(--type-stat-size);
+  font-weight: var(--type-weight-heading);
+  line-height: 1;
+  letter-spacing: -.04em;
+}
+.about-story__count span,
+.process-board__status span,
+.career-ledger__status span,
+.voices-stage__count span {
+  font-family: var(--font-mono);
+  font-size: var(--type-label-size);
+  font-weight: 400;
+  line-height: var(--type-line-label);
+  letter-spacing: .12em;
+}
+
+/* Shared heading-to-copy rhythm */
+.section-head__index { margin-bottom: var(--type-space-label-heading); }
+.section-head__note { margin-top: var(--type-space-heading-copy); }
+.new-work-reel__eyebrow,
+.story-desk__eyebrow,
+.deck-room__eyebrow,
+.flyer-slider__eyebrow,
+.interior-dossier__eyebrow { margin-bottom: var(--type-space-label-heading); }
+
+@media (max-width: 640px) {
+  :root {
+    --type-h1-size: clamp(2.1rem, 12.5vw, 4.4rem);
+    --type-h2-size: clamp(2.15rem, 10.8vw, 3.7rem);
+    --type-h3-size: clamp(2rem, 10.2vw, 3.25rem);
+    --type-editorial-size: clamp(1.9rem, 9vw, 3rem);
+    --type-title-lg-size: clamp(1.25rem, 6.4vw, 1.8rem);
+    --type-title-md-size: clamp(1.08rem, 5.4vw, 1.55rem);
+    --type-body-size: .8125rem;
+    --type-lead-size: .9rem;
+  }
+}
