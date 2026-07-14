@@ -564,6 +564,66 @@
   const featuredList = doc.querySelector('[data-featured-list]');
   const projects = DATA.projects || [];
 
+  /* ---------------- About profile dossier ---------------- */
+  const aboutDossier = doc.querySelector('[data-about-dossier]');
+  if (aboutDossier) {
+    const aboutPanels = [...aboutDossier.querySelectorAll('[data-about-panel]')];
+    const aboutTabs = [...aboutDossier.querySelectorAll('[data-about-tab]')];
+    const aboutIndex = aboutDossier.querySelector('[data-about-active-index]');
+    const aboutProgress = aboutDossier.querySelector('[data-about-progress]');
+    const aboutSwipe = aboutDossier.querySelector('[data-about-swipe]');
+    const aboutTablist = aboutDossier.querySelector('.about-story__tabs');
+    let activeAbout = 0;
+    let aboutStartX = 0;
+    let aboutStartY = 0;
+
+    const renderAbout = (nextIndex, moveFocus = false) => {
+      activeAbout = (nextIndex + aboutPanels.length) % aboutPanels.length;
+      aboutPanels.forEach((panel, index) => {
+        const isActive = index === activeAbout;
+        panel.classList.toggle('is-active', isActive);
+        panel.setAttribute('aria-hidden', String(!isActive));
+        panel.inert = !isActive;
+      });
+      aboutTabs.forEach((tab, index) => {
+        const isActive = index === activeAbout;
+        tab.classList.toggle('is-active', isActive);
+        tab.setAttribute('aria-selected', String(isActive));
+        tab.tabIndex = isActive ? 0 : -1;
+      });
+      aboutIndex.textContent = String(activeAbout + 1).padStart(2, '0');
+      aboutProgress.style.transform = `scaleX(${(activeAbout + 1) / aboutPanels.length})`;
+      if (moveFocus) aboutTabs[activeAbout].focus();
+    };
+
+    aboutDossier.classList.add('is-enhanced');
+    aboutTabs.forEach((tab, index) => tab.addEventListener('click', () => renderAbout(index)));
+    aboutTablist.addEventListener('keydown', event => {
+      let nextIndex = null;
+      if (event.key === 'ArrowRight' || event.key === 'ArrowDown') nextIndex = activeAbout + 1;
+      else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') nextIndex = activeAbout - 1;
+      else if (event.key === 'Home') nextIndex = 0;
+      else if (event.key === 'End') nextIndex = aboutTabs.length - 1;
+      if (nextIndex === null) return;
+      event.preventDefault();
+      renderAbout(nextIndex, true);
+    });
+    aboutSwipe.addEventListener('pointerdown', event => {
+      if (!event.isPrimary || event.pointerType === 'mouse') return;
+      aboutStartX = event.clientX;
+      aboutStartY = event.clientY;
+    }, { passive: true });
+    aboutSwipe.addEventListener('pointerup', event => {
+      if (!event.isPrimary || event.pointerType === 'mouse') return;
+      const deltaX = event.clientX - aboutStartX;
+      const deltaY = event.clientY - aboutStartY;
+      if (Math.abs(deltaX) >= 48 && Math.abs(deltaX) > Math.abs(deltaY) * 1.15) {
+        renderAbout(activeAbout + (deltaX < 0 ? 1 : -1));
+      }
+    }, { passive: true });
+    renderAbout(0);
+  }
+
   const imgTag = (src, alt, w, h, eager) =>
     `<img src="${esc(src)}" alt="${esc(alt)}" width="${w}" height="${h}" ${eager ? 'fetchpriority="high"' : 'loading="lazy"'} decoding="async">`;
 
@@ -1354,6 +1414,146 @@
       </button>`;
   };
 
+  const newWorkTitle = title => title
+    .replace(/^\d+\.\s*/, '')
+    .replace(/@\d+(?:\.\d+)?x/gi, '')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+
+  const newWorkShowcaseHTML = (items, label) => {
+    const initialTitle = newWorkTitle(items[0].title);
+    return `<section class="rail rail--new-work new-work-reel" data-new-work-reel data-reveal
+      aria-labelledby="new-work-reel-title">
+      <header class="new-work-reel__head">
+        <div>
+          <span class="mono-label new-work-reel__eyebrow">Fresh output · ${items.length} selected frames</span>
+          <h3 id="new-work-reel-title">New work <em>in motion.</em></h3>
+        </div>
+        <p>Recent campaign, brand and culture-led work—edited as a tactile studio reel.</p>
+      </header>
+
+      <div class="new-work-reel__board">
+        <aside class="new-work-reel__info" aria-live="polite">
+          <span class="new-work-reel__number" data-new-work-number>01</span>
+          <div class="new-work-reel__copy">
+            <span class="mono-label">Current release</span>
+            <h4 data-new-work-title>${esc(initialTitle)}</h4>
+            <p>Selected from the latest visual systems, campaign experiments and shipped brand moments.</p>
+          </div>
+          <button class="new-work-reel__open" type="button" data-new-work-open data-gal-open="${esc(items[0].id)}">
+            <span>Open selected work</span><i aria-hidden="true">↗</i>
+          </button>
+        </aside>
+
+        <div class="new-work-reel__stage" data-new-work-stage tabindex="0" role="group"
+          aria-label="${esc(label)} — interactive artwork carousel">
+          <span class="new-work-reel__axis" aria-hidden="true"></span>
+          <span class="mono-label new-work-reel__coordinate new-work-reel__coordinate--top" aria-hidden="true">CURATED / 2026</span>
+          <span class="mono-label new-work-reel__coordinate new-work-reel__coordinate--side" aria-hidden="true">DRAG · SWIPE · TRACKPAD</span>
+          ${items.map((it, index) => {
+            const [src, w, h] = it.thumb || it.cover;
+            return `<button class="new-work-reel__card" type="button" style="--new-work-ar: ${w} / ${h}"
+              data-new-work-card="${index}" data-new-work-id="${esc(it.id)}"
+              aria-label="Select ${esc(newWorkTitle(it.title))}">
+              <span class="new-work-reel__frame">
+                <img data-new-work-img data-src="${encodeURI(src)}" alt="${esc(newWorkTitle(it.title))} — ${esc(label)}"
+                  width="${w}" height="${h}" loading="lazy" decoding="async">
+                <span class="new-work-reel__folio mono-label" aria-hidden="true">${String(index + 1).padStart(2, '0')}</span>
+              </span>
+            </button>`;
+          }).join('')}
+        </div>
+      </div>
+
+      <footer class="new-work-reel__footer">
+        <div class="new-work-reel__progress" aria-hidden="true"><i data-new-work-progress></i></div>
+        <div class="new-work-reel__nav">
+          <button type="button" data-new-work-prev aria-label="Previous new work">←</button>
+          <span class="mono-label"><b data-new-work-current>01</b> / ${String(items.length).padStart(2, '0')}</span>
+          <button type="button" data-new-work-next aria-label="Next new work">→</button>
+        </div>
+      </footer>
+    </section>`;
+  };
+
+  const carouselShowcaseHTML = (items, label) => {
+    const initial = items[0];
+    const initialCount = initial.pages ? initial.pages.length : 1;
+    const [, initialW, initialH] = initial.thumb || initial.cover;
+    const initialFormat = initialW > initialH ? 'Landscape' : 'Portrait';
+    return `<section class="rail rail--carousels story-desk" data-story-desk data-reveal
+      aria-labelledby="story-desk-title">
+      <header class="story-desk__head">
+        <div>
+          <span class="mono-label story-desk__eyebrow">Narrative systems · ${items.length} selected stories</span>
+          <h3 id="story-desk-title">Carousels <em>&amp; case studies</em></h3>
+        </div>
+        <p>Sequential design where every frame earns the next swipe—from opening hook to final takeaway.</p>
+      </header>
+
+      <div class="story-desk__board">
+        <aside class="story-desk__brief" aria-live="polite">
+          <span class="mono-label">Story file <b data-story-current-label>01</b> / ${String(items.length).padStart(2, '0')}</span>
+          <h4 data-story-title>${esc(initial.title)}</h4>
+          <p>A complete visual narrative, presented as a tactile stack so the sequence stays visible.</p>
+          <dl>
+            <div><dt>Sequence</dt><dd data-story-slide-count>${String(initialCount).padStart(2, '0')} slides</dd></div>
+            <div><dt>Format</dt><dd data-story-format>${initialFormat}</dd></div>
+            <div><dt>System</dt><dd>Story-led</dd></div>
+          </dl>
+          <div class="story-desk__actions">
+            <div>
+              <button type="button" data-story-prev aria-label="Previous case study">←</button>
+              <button type="button" data-story-next aria-label="Next case study">→</button>
+            </div>
+            <button class="story-desk__open" type="button" data-story-open data-gal-open="${esc(initial.id)}">
+              <span>Open sequence</span><i aria-hidden="true">↗</i>
+            </button>
+          </div>
+        </aside>
+
+        <div class="story-desk__stage" data-story-stage tabindex="0" role="group"
+          aria-label="${esc(label)} — layered project carousel">
+          <span class="story-desk__binding" aria-hidden="true"></span>
+          <span class="mono-label story-desk__stage-label" aria-hidden="true">SEQUENCE / FRAME SYSTEM</span>
+          ${items.map((it, projectIndex) => {
+            const [coverSrc, coverW, coverH] = it.thumb || it.cover;
+            const pageCount = it.pages ? it.pages.length : 1;
+            const ratio = coverW / coverH;
+            const previews = (it.previews || [it.thumb || it.cover, ...(it.pages || []).slice(1, 3)]).slice(0, 3);
+            const widthMax = Math.round(Math.min(ratio * 480, 720));
+            return `<button class="story-desk__project" type="button"
+              style="--story-ar: ${coverW} / ${coverH}; --story-width: clamp(280px, ${(ratio * 31).toFixed(2)}vw, ${widthMax}px)"
+              data-story-project="${projectIndex}" data-story-id="${esc(it.id)}"
+              aria-label="Open ${esc(it.title)} — ${pageCount} slides">
+              <span class="story-desk__stack">
+                <span class="story-desk__ghost story-desk__ghost--one" aria-hidden="true"></span>
+                <span class="story-desk__ghost story-desk__ghost--two" aria-hidden="true"></span>
+                ${previews.map((preview, sheetIndex) => {
+                  const [src, w, h] = preview;
+                  return `<span class="story-desk__sheet${sheetIndex === 0 ? ' is-front' : ''}" style="--story-sheet: ${sheetIndex}" aria-hidden="${sheetIndex === 0 ? 'false' : 'true'}">
+                    <img data-story-img data-src="${encodeURI(src)}" alt="${sheetIndex === 0 ? `${esc(it.title)} — cover` : ''}"
+                      width="${w}" height="${h}" loading="lazy" decoding="async">
+                  </span>`;
+                }).reverse().join('')}
+                <span class="story-desk__count mono-label" aria-hidden="true">${String(pageCount).padStart(2, '0')} slides</span>
+              </span>
+            </button>`;
+          }).join('')}
+          <span class="story-desk__hint mono-label" aria-hidden="true">STACK = COMPLETE SEQUENCE</span>
+        </div>
+      </div>
+
+      <footer class="story-desk__footer">
+        <div class="story-desk__progress" aria-hidden="true"><i data-story-progress></i></div>
+        <div class="story-desk__index" aria-label="Choose a case study">
+          ${items.map((it, index) => `<button type="button" data-story-go="${index}"
+            aria-pressed="${index === 0 ? 'true' : 'false'}" aria-label="Show ${esc(it.title)}">${String(index + 1).padStart(2, '0')}</button>`).join('')}
+        </div>
+      </footer>
+    </section>`;
+  };
+
   const socialCardHTML = (it, index) => {
     const [src, w, h] = it.thumb || it.cover;
     const format = w === h ? 'Square' : w < h ? 'Portrait' : 'Landscape';
@@ -1682,7 +1882,9 @@
     railsWrap.innerHTML = GAL.categories.map(([key, label]) => {
       const items = GAL.items.filter(it => it.cat === key);
       if (!items.length) return '';
+      if (key === 'new-work') return newWorkShowcaseHTML(items, label);
       if (key === 'ai-ads') return aiShowcaseHTML(items, label);
+      if (key === 'carousels') return carouselShowcaseHTML(items, label);
       if (key === 'social') return socialShowcaseHTML(items, label);
       if (key === 'festivals') return festivalShowcaseHTML(items, label);
       if (key === 'thumbnails') return thumbnailShowcaseHTML(items, label);
@@ -1707,6 +1909,203 @@
           </div>
         </div>`;
     }).join('');
+
+    // New Work is a curated studio reel: one clear focal frame with nearby
+    // pieces kept visible for context. Side cards select; the centre opens.
+    const newWorkReel = railsWrap.querySelector('[data-new-work-reel]');
+    if (newWorkReel) {
+      const items = GAL.items.filter(it => it.cat === 'new-work');
+      const cards = [...newWorkReel.querySelectorAll('[data-new-work-card]')];
+      const stage = newWorkReel.querySelector('[data-new-work-stage]');
+      const title = newWorkReel.querySelector('[data-new-work-title]');
+      const number = newWorkReel.querySelector('[data-new-work-number]');
+      const current = newWorkReel.querySelector('[data-new-work-current]');
+      const progress = newWorkReel.querySelector('[data-new-work-progress]');
+      const open = newWorkReel.querySelector('[data-new-work-open]');
+      let active = 0;
+      let wheelTotal = 0;
+      let wheelStamp = 0;
+      let touchX = null;
+      let touchY = null;
+
+      const renderNewWork = next => {
+        active = (next + cards.length) % cards.length;
+        cards.forEach((card, index) => {
+          let delta = index - active;
+          if (delta > cards.length / 2) delta -= cards.length;
+          if (delta < -cards.length / 2) delta += cards.length;
+          const visible = Math.abs(delta) <= 2;
+          card.dataset.position = visible ? String(delta) : 'far';
+          card.tabIndex = index === active ? 0 : -1;
+          card.setAttribute('aria-current', index === active ? 'true' : 'false');
+          const image = card.querySelector('[data-new-work-img]');
+          if (visible && image && !image.hasAttribute('src')) image.src = image.dataset.src;
+          if (index === active) card.dataset.galOpen = card.dataset.newWorkId;
+          else delete card.dataset.galOpen;
+        });
+        const item = items[active];
+        const count = String(active + 1).padStart(2, '0');
+        title.textContent = newWorkTitle(item.title);
+        number.textContent = count;
+        current.textContent = count;
+        open.dataset.galOpen = item.id;
+        progress.style.transform = `scaleX(${(active + 1) / cards.length})`;
+      };
+
+      const stepNewWork = direction => {
+        SFX.flip();
+        renderNewWork(active + direction);
+      };
+
+      newWorkReel.addEventListener('click', e => {
+        const card = e.target.closest('[data-new-work-card]');
+        if (card) {
+          const index = Number(card.dataset.newWorkCard);
+          if (index !== active) {
+            e.preventDefault();
+            e.stopPropagation();
+            renderNewWork(index);
+          }
+          return;
+        }
+        if (e.target.closest('[data-new-work-prev]')) stepNewWork(-1);
+        else if (e.target.closest('[data-new-work-next]')) stepNewWork(1);
+      });
+      stage.addEventListener('keydown', e => {
+        if (e.key === 'ArrowLeft') { e.preventDefault(); stepNewWork(-1); }
+        else if (e.key === 'ArrowRight') { e.preventDefault(); stepNewWork(1); }
+        else if (e.key === 'Home') { e.preventDefault(); renderNewWork(0); }
+        else if (e.key === 'End') { e.preventDefault(); renderNewWork(cards.length - 1); }
+      });
+      stage.addEventListener('wheel', e => {
+        const delta = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : (e.shiftKey ? e.deltaY : 0);
+        if (!delta) return;
+        e.preventDefault();
+        const now = performance.now();
+        if (now - wheelStamp > 180) wheelTotal = 0;
+        wheelStamp = now;
+        wheelTotal += delta;
+        if (Math.abs(wheelTotal) < 46) return;
+        stepNewWork(wheelTotal > 0 ? 1 : -1);
+        wheelTotal = 0;
+      }, { passive: false });
+      stage.addEventListener('touchstart', e => {
+        touchX = e.touches[0].clientX;
+        touchY = e.touches[0].clientY;
+      }, { passive: true });
+      stage.addEventListener('touchend', e => {
+        if (touchX === null || touchY === null) return;
+        const dx = e.changedTouches[0].clientX - touchX;
+        const dy = e.changedTouches[0].clientY - touchY;
+        touchX = touchY = null;
+        if (Math.abs(dx) > 42 && Math.abs(dx) > Math.abs(dy) * 1.15) stepNewWork(dx < 0 ? 1 : -1);
+      }, { passive: true });
+      renderNewWork(0);
+    }
+
+    // Case studies use a project carousel with a true multi-slide stack.
+    // Only the active and adjacent projects are hydrated to keep decoding light.
+    const storyDesk = railsWrap.querySelector('[data-story-desk]');
+    if (storyDesk) {
+      const items = GAL.items.filter(it => it.cat === 'carousels');
+      const projects = [...storyDesk.querySelectorAll('[data-story-project]')];
+      const indexButtons = [...storyDesk.querySelectorAll('[data-story-go]')];
+      const stage = storyDesk.querySelector('[data-story-stage]');
+      const title = storyDesk.querySelector('[data-story-title]');
+      const label = storyDesk.querySelector('[data-story-current-label]');
+      const slideCount = storyDesk.querySelector('[data-story-slide-count]');
+      const format = storyDesk.querySelector('[data-story-format]');
+      const progress = storyDesk.querySelector('[data-story-progress]');
+      const open = storyDesk.querySelector('[data-story-open]');
+      let active = 0;
+      let wheelTotal = 0;
+      let wheelStamp = 0;
+      let touchX = null;
+      let touchY = null;
+
+      const renderStoryDesk = (next, moveIndex = true) => {
+        active = (next + projects.length) % projects.length;
+        projects.forEach((project, index) => {
+          let delta = index - active;
+          if (delta > projects.length / 2) delta -= projects.length;
+          if (delta < -projects.length / 2) delta += projects.length;
+          const state = delta === 0 ? 'current' : delta === -1 ? 'before' : delta === 1 ? 'after' : 'far';
+          project.dataset.state = state;
+          project.tabIndex = delta === 0 ? 0 : -1;
+          project.setAttribute('aria-hidden', delta === 0 ? 'false' : 'true');
+          if (delta === 0) project.dataset.galOpen = project.dataset.storyId;
+          else delete project.dataset.galOpen;
+          if (Math.abs(delta) <= 1) {
+            project.querySelectorAll('[data-story-img]').forEach(image => {
+              if (!image.hasAttribute('src')) image.src = image.dataset.src;
+            });
+          }
+        });
+
+        indexButtons.forEach((button, index) => {
+          const selected = index === active;
+          button.classList.toggle('is-active', selected);
+          button.setAttribute('aria-pressed', selected ? 'true' : 'false');
+          button.tabIndex = selected ? 0 : -1;
+        });
+        const item = items[active];
+        const [src, w, h] = item.thumb || item.cover;
+        const count = String(active + 1).padStart(2, '0');
+        title.textContent = item.title;
+        label.textContent = count;
+        slideCount.textContent = `${String(item.pages ? item.pages.length : 1).padStart(2, '0')} slides`;
+        format.textContent = w > h ? 'Landscape' : 'Portrait';
+        open.dataset.galOpen = item.id;
+        progress.style.transform = `scaleX(${(active + 1) / projects.length})`;
+        if (moveIndex) indexButtons[active].scrollIntoView({ behavior: REDUCED ? 'auto' : 'smooth', block: 'nearest', inline: 'center' });
+      };
+
+      const stepStoryDesk = direction => {
+        SFX.flip();
+        renderStoryDesk(active + direction);
+      };
+
+      storyDesk.addEventListener('click', e => {
+        const go = e.target.closest('[data-story-go]');
+        if (go) {
+          SFX.flip();
+          renderStoryDesk(Number(go.dataset.storyGo));
+          return;
+        }
+        if (e.target.closest('[data-story-prev]')) stepStoryDesk(-1);
+        else if (e.target.closest('[data-story-next]')) stepStoryDesk(1);
+      });
+      stage.addEventListener('keydown', e => {
+        if (e.key === 'ArrowLeft') { e.preventDefault(); stepStoryDesk(-1); }
+        else if (e.key === 'ArrowRight') { e.preventDefault(); stepStoryDesk(1); }
+        else if (e.key === 'Home') { e.preventDefault(); renderStoryDesk(0); }
+        else if (e.key === 'End') { e.preventDefault(); renderStoryDesk(projects.length - 1); }
+      });
+      stage.addEventListener('wheel', e => {
+        const delta = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : (e.shiftKey ? e.deltaY : 0);
+        if (!delta) return;
+        e.preventDefault();
+        const now = performance.now();
+        if (now - wheelStamp > 180) wheelTotal = 0;
+        wheelStamp = now;
+        wheelTotal += delta;
+        if (Math.abs(wheelTotal) < 46) return;
+        stepStoryDesk(wheelTotal > 0 ? 1 : -1);
+        wheelTotal = 0;
+      }, { passive: false });
+      stage.addEventListener('touchstart', e => {
+        touchX = e.touches[0].clientX;
+        touchY = e.touches[0].clientY;
+      }, { passive: true });
+      stage.addEventListener('touchend', e => {
+        if (touchX === null || touchY === null) return;
+        const dx = e.changedTouches[0].clientX - touchX;
+        const dy = e.changedTouches[0].clientY - touchY;
+        touchX = touchY = null;
+        if (Math.abs(dx) > 42 && Math.abs(dx) > Math.abs(dy) * 1.15) stepStoryDesk(dx < 0 ? 1 : -1);
+      }, { passive: true });
+      renderStoryDesk(0, false);
+    }
 
     // Reference-style 3D coverflow for AI campaign concepts.
     const aiFlow = railsWrap.querySelector('[data-ai-coverflow]');

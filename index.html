@@ -22,7 +22,7 @@
   <link rel="preload" href="assets/fonts/archivo-var.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="assets/fonts/fraunces-var-italic.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="assets/fonts/space-mono.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="css/styles.css?v=20260714-19">
+  <link rel="stylesheet" href="css/styles.css?v=20260714-25">
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
@@ -203,62 +203,67 @@
           </div>
           <p class="s-about__head-note">Print discipline. Fintech pace. Performance accountability. Six years spent making visual systems work harder.</p>
         </div>
-        <div class="s-about__grid">
-          <aside class="s-about__portrait" data-reveal data-parallax-img>
+        <div class="about-dossier" data-about-dossier data-reveal>
+          <aside class="about-profile" data-parallax-img>
             <div class="s-about__portrait-meta mono-label">
               <span>Profile dossier</span><span>NG / 2026</span>
             </div>
             <div class="s-about__portrait-frame">
-              <img src="assets/work/about-visual.jpg" alt="Nishchay Gupta — editorial self-portrait from the ‘Taste is becoming the advantage’ series" loading="lazy" width="1000" height="1250">
+              <img src="assets/profile/profile_pic_refined.jpg" alt="Nishchay Gupta — senior graphic designer" loading="lazy" width="1080" height="1350">
               <span class="s-about__portrait-corners" aria-hidden="true"></span>
               <span class="s-about__portrait-folio mono-label" aria-hidden="true">01 / 01</span>
             </div>
-            <span class="mono-label s-about__portrait-tag">Gurgaon, IN — 28.4595° N, 77.0266° E</span>
-            <div class="s-about__status">
-              <span class="mono-label"><i aria-hidden="true"></i>Currently</span>
-              <strong>Senior Graphic Designer</strong>
-              <small>Univest · Gurgaon</small>
+            <div class="about-profile__foot">
+              <div>
+                <span class="mono-label"><i aria-hidden="true"></i>Available for the right brief</span>
+                <strong>Nishchay Gupta</strong>
+                <small>Senior Graphic Designer · Gurgaon</small>
+              </div>
+              <span class="mono-label">28.4595° N<br>77.0266° E</span>
             </div>
           </aside>
-          <div class="s-about__body">
-            <div class="s-about__chapter" data-reveal>
-              <div class="s-about__chapter-key"><span>01</span><small class="mono-label">Origin</small></div>
-              <p class="s-about__lead">
-                I started with book covers in Agra. 200+ of them, print-ready artwork across
-                100+ titles for one of India's leading educational publishers. I walked in
-                as an intern and was promoted twice before I left. Print teaches you one
-                thing fast: there is no version two after it ships.
-              </p>
+
+          <div class="about-story">
+            <header class="about-story__head">
+              <div><span class="mono-label">Personal file</span><p>How the practice was built.</p></div>
+              <div class="about-story__count" aria-live="polite"><strong data-about-active-index>01</strong><span>/ 03</span></div>
+            </header>
+
+            <div class="about-story__panels" data-about-swipe>
+              <article class="about-chapter is-active" id="about-panel-1" role="tabpanel" aria-labelledby="about-tab-1" data-about-panel>
+                <span class="about-chapter__number" aria-hidden="true">01</span>
+                <span class="mono-label about-chapter__label">Origin · Print discipline</span>
+                <h3>Print taught me <em>to ship.</em></h3>
+                <p>I started with book covers in Agra—200+ of them, with print-ready artwork across 100+ titles. I walked in as an intern and was promoted twice before I left. Print teaches you one thing fast: there is no version two after it ships.</p>
+              </article>
+              <article class="about-chapter" id="about-panel-2" role="tabpanel" aria-labelledby="about-tab-2" data-about-panel>
+                <span class="about-chapter__number" aria-hidden="true">02</span>
+                <span class="mono-label about-chapter__label">Now · Performance pace</span>
+                <h3>Every frame has <em>a job.</em></h3>
+                <p>Now I'm the senior graphic designer at <strong>Univest</strong>: 250+ performance creatives across 40+ campaign concepts and the full funnel after the click. Before that, I designed 35+ investor decks and identities for 10+ fintech products at <strong>Payomatix</strong>.</p>
+              </article>
+              <article class="about-chapter" id="about-panel-3" role="tabpanel" aria-labelledby="about-tab-3" data-about-panel>
+                <span class="about-chapter__number" aria-hidden="true">03</span>
+                <span class="mono-label about-chapter__label">Method · Measured judgement</span>
+                <h3>Taste leads. <em>Data decides.</em></h3>
+                <p>My degree is in mathematics, and it shows in how I work. I ship A/B variants and let the numbers settle the argument. Midjourney, Firefly and ChatGPT accelerate exploration, but AI stays upstream—it never gets the final say on a frame.</p>
+              </article>
             </div>
-            <div class="s-about__chapter" data-reveal>
-              <div class="s-about__chapter-key"><span>02</span><small class="mono-label">Now</small></div>
-              <p>
-                Now I'm the senior graphic designer at <strong>Univest</strong>, one of
-                India's fastest-growing investment platforms. 250+ performance creatives
-                across 40+ campaign concepts on Meta, Google, LinkedIn, Instagram and app
-                campaigns, plus the landing pages, emailers, push notifications and in-app
-                promos they lead into. Before that, a year at <strong>Payomatix</strong>
-                designing 35+ investor pitch decks and brand identities for 10+ fintech
-                products, for clients in payments, crypto, iGaming and banking worldwide.
-              </p>
+
+            <div class="about-story__tabs" role="tablist" aria-label="Choose an about chapter">
+              <button class="about-tab is-active" id="about-tab-1" type="button" role="tab" aria-selected="true" aria-controls="about-panel-1" tabindex="0" data-about-tab data-cursor-view="Read"><i>01</i><span>Origin</span></button>
+              <button class="about-tab" id="about-tab-2" type="button" role="tab" aria-selected="false" aria-controls="about-panel-2" tabindex="-1" data-about-tab data-cursor-view="Read"><i>02</i><span>Now</span></button>
+              <button class="about-tab" id="about-tab-3" type="button" role="tab" aria-selected="false" aria-controls="about-panel-3" tabindex="-1" data-about-tab data-cursor-view="Read"><i>03</i><span>Method</span></button>
             </div>
-            <div class="s-about__chapter" data-reveal>
-              <div class="s-about__chapter-key"><span>03</span><small class="mono-label">Method</small></div>
-              <p>
-                My degree is in mathematics, and it shows in how I work. I don't defend a
-                creative in a meeting; I ship it in A/B variants and let the numbers settle
-                it. Midjourney, Firefly and ChatGPT sit inside my process for faster
-                ideation at scale, but AI stays upstream of the work. It never gets the
-                final say on a frame.
-              </p>
-            </div>
-            <ul class="s-about__facts" data-reveal>
-              <li><span class="mono-label">Currently</span>Senior Graphic Designer, Univest</li>
-              <li><span class="mono-label">Previously</span>Payomatix · Upkar Prakashan</li>
-              <li><span class="mono-label">Focus</span>Brand × Performance × AI</li>
-              <li><span class="mono-label">Base</span>Gurgaon — remote worldwide</li>
-            </ul>
+            <div class="about-story__progress" aria-hidden="true"><i data-about-progress></i></div>
           </div>
+
+          <ul class="about-dossier__facts">
+            <li><span class="mono-label">Currently</span><strong>Senior Graphic Designer</strong><small>Univest</small></li>
+            <li><span class="mono-label">Previously</span><strong>Visual &amp; Print Design</strong><small>Payomatix · Upkar</small></li>
+            <li><span class="mono-label">Focus</span><strong>Brand × Performance</strong><small>AI-assisted systems</small></li>
+            <li><span class="mono-label">Base</span><strong>Gurgaon, India</strong><small>Remote worldwide</small></li>
+          </ul>
         </div>
       </div>
     </section>
@@ -853,6 +858,6 @@
   <script src="js/vendor/ScrollTrigger.min.js" defer></script>
   <script src="js/data.js" defer></script>
   <script src="js/gallery-data.js" defer></script>
-  <script src="js/main.js?v=20260714-19" defer></script>
+  <script src="js/main.js?v=20260714-25" defer></script>
 </body>
 </html>
