@@ -1339,7 +1339,7 @@
     const el = e.target.closest('a[href], button');
     if (!el) return;
     // these play their own sound inside their open/close handlers
-    if (el.closest('[data-sound-toggle], [data-gal-open], [data-case-open], [data-lb-close], [data-case-close], [data-menu-btn]')) return;
+    if (el.closest('[data-sound-toggle], [data-gal-open], [data-case-open], [data-lb-close], [data-case-close], [data-menu-btn], [data-new-work-prev], [data-new-work-next], [data-story-prev], [data-story-next], [data-story-go], [data-deck-prev], [data-deck-next], [data-deck-go]')) return;
     if (el.closest('[data-lb-prev], [data-lb-next], [data-rail-prev], [data-rail-next]')) SFX.flip();
     else if (el.closest('[data-theme-toggle]')) SFX.toggle();
     else SFX.click();
@@ -1551,6 +1551,101 @@
             aria-pressed="${index === 0 ? 'true' : 'false'}" aria-label="Show ${esc(it.title)}">${String(index + 1).padStart(2, '0')}</button>`).join('')}
         </div>
       </footer>
+    </section>`;
+  };
+
+  const deckShowcaseHTML = (items, label) => {
+    const initial = items[0];
+    const initialCount = initial.pages ? initial.pages.length : 1;
+    const [, initialW, initialH] = initial.thumb || initial.cover;
+    return `<section class="rail rail--decks deck-room" data-deck-room data-reveal
+      aria-labelledby="deck-room-title">
+      <header class="deck-room__head">
+        <div>
+          <span class="mono-label deck-room__eyebrow">Presentation systems · ${items.length} selected decks</span>
+          <h3 id="deck-room-title">Decks <em>&amp; presentations</em></h3>
+        </div>
+        <p>High-stakes narratives built to hold attention in a room—and make the final number land.</p>
+      </header>
+
+      <div class="deck-room__console">
+        <header class="deck-room__toolbar">
+          <span class="deck-room__lights" aria-hidden="true"><i></i><i></i><i></i></span>
+          <span class="mono-label">Presentation review / <b data-deck-current>01</b></span>
+          <div>
+            <button type="button" data-deck-prev aria-label="Previous presentation">←</button>
+            <button type="button" data-deck-next aria-label="Next presentation">→</button>
+          </div>
+        </header>
+
+        <div class="deck-room__workspace">
+          <div class="deck-room__stage" data-deck-stage tabindex="0" role="group"
+            aria-label="${esc(label)} — interactive presentation carousel">
+            <span class="deck-room__horizon" aria-hidden="true"></span>
+            <span class="mono-label deck-room__coordinate" aria-hidden="true">LIVE CANVAS / NATIVE RATIO</span>
+            ${items.map((it, index) => {
+              const [src, w, h] = it.thumb || it.cover;
+              const ratio = w / h;
+              const widthMax = Math.round(Math.min(ratio * 400, 680));
+              const pageCount = it.pages ? it.pages.length : 1;
+              return `<button class="deck-room__deck" type="button"
+                style="--room-ar: ${w} / ${h}; --room-width: clamp(260px, ${(ratio * 30).toFixed(2)}vw, ${widthMax}px)"
+                data-deck-project="${index}" data-deck-id="${esc(it.id)}"
+                aria-label="Open ${esc(it.title)} — ${pageCount} slides">
+                <span class="deck-room__screen">
+                  <span class="deck-room__echo deck-room__echo--one" aria-hidden="true"></span>
+                  <span class="deck-room__echo deck-room__echo--two" aria-hidden="true"></span>
+                  <span class="deck-room__cover">
+                    <img data-deck-cover data-src="${encodeURI(src)}" alt="${esc(it.title)} — cover"
+                      width="${w}" height="${h}" loading="lazy" decoding="async">
+                    <span class="deck-room__slide-count mono-label" aria-hidden="true">${String(pageCount).padStart(2, '0')} slides</span>
+                  </span>
+                </span>
+              </button>`;
+            }).join('')}
+          </div>
+
+          <aside class="deck-room__notes" aria-live="polite">
+            <span class="mono-label">Active presentation</span>
+            <h4 data-deck-title>${esc(initial.title)}</h4>
+            <p>Structured for clarity, pacing and conviction—from opening context to the final ask.</p>
+            <div class="deck-room__previews">
+              ${items.map((it, projectIndex) => {
+                const previews = (it.previews || [it.thumb || it.cover, ...(it.pages || []).slice(1, 3)]).slice(1, 3);
+                return `<div data-deck-preview-group="${projectIndex}" aria-hidden="${projectIndex === 0 ? 'false' : 'true'}">
+                  ${previews.map((preview, previewIndex) => {
+                    const [src, w, h] = preview;
+                    return `<span style="--preview-ar: ${w} / ${h}">
+                      <img data-deck-preview data-src="${encodeURI(src)}" alt="" width="${w}" height="${h}" loading="lazy" decoding="async">
+                      <i class="mono-label">0${previewIndex + 2}</i>
+                    </span>`;
+                  }).join('')}
+                </div>`;
+              }).join('')}
+            </div>
+            <dl>
+              <div><dt>Length</dt><dd data-deck-slide-count>${String(initialCount).padStart(2, '0')} slides</dd></div>
+              <div><dt>Format</dt><dd data-deck-format>${initialW > initialH ? 'Widescreen' : 'Portrait'}</dd></div>
+            </dl>
+            <button class="deck-room__open" type="button" data-deck-open data-gal-open="${esc(initial.id)}">
+              <span>Review full deck</span><i aria-hidden="true">↗</i>
+            </button>
+          </aside>
+        </div>
+
+        <footer class="deck-room__selector" aria-label="Choose a presentation">
+          ${items.map((it, index) => {
+            const [src, w, h] = it.thumb || it.cover;
+            return `<button type="button" data-deck-go="${index}" aria-pressed="${index === 0 ? 'true' : 'false'}"
+              aria-label="Show presentation: ${esc(it.title)}">
+              <span class="deck-room__selector-thumb" style="--selector-ar: ${w} / ${h}">
+                <img src="${encodeURI(src)}" alt="" width="${w}" height="${h}" loading="lazy" decoding="async">
+              </span>
+              <span><small class="mono-label">D.${String(index + 1).padStart(2, '0')}</small><strong>${esc(it.title)}</strong></span>
+            </button>`;
+          }).join('')}
+        </footer>
+      </div>
     </section>`;
   };
 
@@ -1885,6 +1980,7 @@
       if (key === 'new-work') return newWorkShowcaseHTML(items, label);
       if (key === 'ai-ads') return aiShowcaseHTML(items, label);
       if (key === 'carousels') return carouselShowcaseHTML(items, label);
+      if (key === 'decks') return deckShowcaseHTML(items, label);
       if (key === 'social') return socialShowcaseHTML(items, label);
       if (key === 'festivals') return festivalShowcaseHTML(items, label);
       if (key === 'thumbnails') return thumbnailShowcaseHTML(items, label);
@@ -2105,6 +2201,121 @@
         if (Math.abs(dx) > 42 && Math.abs(dx) > Math.abs(dy) * 1.15) stepStoryDesk(dx < 0 ? 1 : -1);
       }, { passive: true });
       renderStoryDesk(0, false);
+    }
+
+    // Decks live inside a presentation review console rather than another
+    // paper stack. Covers keep their own ratio; supporting slides sit in a
+    // separate review rail so portrait and widescreen decks both feel native.
+    const deckRoom = railsWrap.querySelector('[data-deck-room]');
+    if (deckRoom) {
+      const items = GAL.items.filter(it => it.cat === 'decks');
+      const projects = [...deckRoom.querySelectorAll('[data-deck-project]')];
+      const previews = [...deckRoom.querySelectorAll('[data-deck-preview-group]')];
+      const selectors = [...deckRoom.querySelectorAll('[data-deck-go]')];
+      const stage = deckRoom.querySelector('[data-deck-stage]');
+      const current = deckRoom.querySelector('[data-deck-current]');
+      const title = deckRoom.querySelector('[data-deck-title]');
+      const slideCount = deckRoom.querySelector('[data-deck-slide-count]');
+      const format = deckRoom.querySelector('[data-deck-format]');
+      const open = deckRoom.querySelector('[data-deck-open]');
+      let active = 0;
+      let wheelTotal = 0;
+      let wheelStamp = 0;
+      let touchX = null;
+      let touchY = null;
+
+      const hydrateDeck = project => {
+        const cover = project && project.querySelector('[data-deck-cover]');
+        if (cover && !cover.hasAttribute('src')) cover.src = cover.dataset.src;
+      };
+      const hydrateDeckPreviews = group => {
+        if (!group) return;
+        group.querySelectorAll('[data-deck-preview]').forEach(image => {
+          if (!image.hasAttribute('src')) image.src = image.dataset.src;
+        });
+      };
+
+      const renderDeckRoom = (next, moveSelector = true) => {
+        active = (next + projects.length) % projects.length;
+        projects.forEach((project, index) => {
+          let delta = index - active;
+          if (delta > projects.length / 2) delta -= projects.length;
+          if (delta < -projects.length / 2) delta += projects.length;
+          const state = delta === 0 ? 'current' : delta < 0 ? 'before' : 'after';
+          project.dataset.state = Math.abs(delta) <= 1 ? state : 'far';
+          project.tabIndex = delta === 0 ? 0 : -1;
+          project.setAttribute('aria-hidden', delta === 0 ? 'false' : 'true');
+          if (delta === 0) project.dataset.galOpen = project.dataset.deckId;
+          else delete project.dataset.galOpen;
+          if (Math.abs(delta) <= 1) hydrateDeck(project);
+        });
+        previews.forEach((group, index) => {
+          const selected = index === active;
+          group.classList.toggle('is-active', selected);
+          group.setAttribute('aria-hidden', selected ? 'false' : 'true');
+          if (selected) hydrateDeckPreviews(group);
+        });
+        selectors.forEach((selector, index) => {
+          const selected = index === active;
+          selector.classList.toggle('is-active', selected);
+          selector.setAttribute('aria-pressed', selected ? 'true' : 'false');
+        });
+
+        const item = items[active];
+        const [, w, h] = item.thumb || item.cover;
+        current.textContent = String(active + 1).padStart(2, '0');
+        title.textContent = item.title;
+        slideCount.textContent = `${String(item.pages ? item.pages.length : 1).padStart(2, '0')} slides`;
+        format.textContent = w > h ? 'Widescreen' : 'Portrait';
+        open.dataset.galOpen = item.id;
+        if (moveSelector) selectors[active].scrollIntoView({ behavior: REDUCED ? 'auto' : 'smooth', block: 'nearest', inline: 'center' });
+      };
+
+      const stepDeckRoom = direction => {
+        SFX.flip();
+        renderDeckRoom(active + direction);
+      };
+
+      deckRoom.addEventListener('click', e => {
+        const go = e.target.closest('[data-deck-go]');
+        if (go) {
+          SFX.flip();
+          renderDeckRoom(Number(go.dataset.deckGo));
+          return;
+        }
+        if (e.target.closest('[data-deck-prev]')) stepDeckRoom(-1);
+        else if (e.target.closest('[data-deck-next]')) stepDeckRoom(1);
+      });
+      stage.addEventListener('keydown', e => {
+        if (e.key === 'ArrowLeft') { e.preventDefault(); stepDeckRoom(-1); }
+        else if (e.key === 'ArrowRight') { e.preventDefault(); stepDeckRoom(1); }
+        else if (e.key === 'Home') { e.preventDefault(); renderDeckRoom(0); }
+        else if (e.key === 'End') { e.preventDefault(); renderDeckRoom(projects.length - 1); }
+      });
+      stage.addEventListener('wheel', e => {
+        const delta = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : (e.shiftKey ? e.deltaY : 0);
+        if (!delta) return;
+        e.preventDefault();
+        const now = performance.now();
+        if (now - wheelStamp > 180) wheelTotal = 0;
+        wheelStamp = now;
+        wheelTotal += delta;
+        if (Math.abs(wheelTotal) < 46) return;
+        stepDeckRoom(wheelTotal > 0 ? 1 : -1);
+        wheelTotal = 0;
+      }, { passive: false });
+      stage.addEventListener('touchstart', e => {
+        touchX = e.touches[0].clientX;
+        touchY = e.touches[0].clientY;
+      }, { passive: true });
+      stage.addEventListener('touchend', e => {
+        if (touchX === null || touchY === null) return;
+        const dx = e.changedTouches[0].clientX - touchX;
+        const dy = e.changedTouches[0].clientY - touchY;
+        touchX = touchY = null;
+        if (Math.abs(dx) > 42 && Math.abs(dx) > Math.abs(dy) * 1.15) stepDeckRoom(dx < 0 ? 1 : -1);
+      }, { passive: true });
+      renderDeckRoom(0, false);
     }
 
     // Reference-style 3D coverflow for AI campaign concepts.
