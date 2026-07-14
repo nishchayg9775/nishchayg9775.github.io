@@ -81,8 +81,8 @@ OPT_MAX_DIM = 2400   # beyond this, browsers pay decode cost for nothing
 OPT_MAX_MB = 0.8     # originals above this get re-encoded instead of copied
 OPT_TARGET = 2000
 
-THUMB_TARGET = 800   # rail cards render ≤330px tall; 800px covers 2x DPR
-THUMB_QUALITY = 78
+THUMB_TARGET = 640   # rail cards render near 320px; enough for 2x DPR
+THUMB_QUALITY = 72
 
 
 def flatten_rgb(im: Image.Image) -> Image.Image:
@@ -236,6 +236,15 @@ def main():
                 thumb = make_thumb(pages[0][0], item_id)
                 if thumb:
                     item["thumb"] = thumb
+                # Multi-page carousel and deck cards show a real three-slide
+                # preview stack. Keep those previews lightweight instead of
+                # decoding several full-resolution PDF renders in the rail.
+                if key in {"carousels", "decks"} and len(pages) > 1:
+                    previews = [thumb or item["cover"]]
+                    for page_no, (page_path, page_w, page_h) in enumerate(pages[1:3], start=2):
+                        page_thumb = make_thumb(page_path, f"{item_id}-p{page_no:02d}")
+                        previews.append(page_thumb or [rel_url(page_path), page_w, page_h])
+                    item["previews"] = previews
                 items.append(item)
             else:
                 skipped.append(rel_url(f))

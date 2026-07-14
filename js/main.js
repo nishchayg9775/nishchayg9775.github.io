@@ -1,6 +1,6 @@
 /* ============================================================
    NISHCHAY GUPTA — PORTFOLIO ’26 · interaction & motion engine
-   GSAP + ScrollTrigger + Lenis (all local), vanilla everything else.
+   GSAP + ScrollTrigger (local), vanilla everything else.
    ============================================================ */
 (() => {
   'use strict';
@@ -9,6 +9,9 @@
   const root = doc.documentElement;
   const REDUCED = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const FINE_POINTER = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+  const LOW_POWER = !FINE_POINTER ||
+    Number(navigator.deviceMemory || 8) <= 4 ||
+    Number(navigator.hardwareConcurrency || 8) <= 4;
   const DATA = window.NG_DATA || { projects: [] };
 
   if (REDUCED) root.classList.add('no-motion');
@@ -17,6 +20,10 @@
   const store = {
     get(k) { try { return localStorage.getItem(k); } catch { return null; } },
     set(k, v) { try { localStorage.setItem(k, v); } catch { /* theme just won't persist */ } }
+  };
+  const session = {
+    get(k) { try { return sessionStorage.getItem(k); } catch { return null; } },
+    set(k, v) { try { sessionStorage.setItem(k, v); } catch { /* optional enhancement */ } }
   };
 
   const esc = s => String(s).replace(/[&<>"']/g, c =>
@@ -41,31 +48,17 @@
       root.dataset.theme = next;
       store.set('ng-theme', next);
       syncThemeMeta();
-      heroField && heroField.refreshColors();
       ambientField && ambientField.refreshColors();
     };
     if (doc.startViewTransition && !REDUCED) doc.startViewTransition(apply);
     else apply();
   });
 
-  /* ---------------- Smooth scroll (Lenis + GSAP) ---------------- */
+  /* ---------------- Native scroll + GSAP ---------------- */
   gsap.registerPlugin(ScrollTrigger);
-  let lenis = null;
-  if (!REDUCED) {
-    // lerp (not duration): touchpads fire continuous small deltas + OS momentum,
-    // and a fixed-duration tween restarts on every event — the page trails the
-    // gesture by seconds. Exponential damping tracks input tightly instead.
-    lenis = new Lenis({ lerp: 0.16 });
-    lenis.on('scroll', ScrollTrigger.update);
-    gsap.ticker.add(t => lenis.raf(t * 1000));
-    gsap.ticker.lagSmoothing(0);
-  }
   const scrollTo = target => {
-    if (lenis) lenis.scrollTo(target, { offset: -70, duration: 1.3, easing: t => Math.min(1, 1.001 - Math.pow(2, -10 * t)) });
-    else {
-      const el = typeof target === 'string' ? doc.querySelector(target) : target;
-      el && el.scrollIntoView({ behavior: REDUCED ? 'auto' : 'smooth' });
-    }
+    const el = typeof target === 'string' ? doc.querySelector(target) : target;
+    el && el.scrollIntoView({ behavior: 'auto' });
   };
   // reference-counted so nested lockers (preloader / menu / case) can't unlock each other
   let lockCount = 0;
@@ -73,7 +66,6 @@
     lockCount = Math.max(0, lockCount + (lock ? 1 : -1));
     const locked = lockCount > 0;
     doc.body.classList.toggle('is-locked', locked);
-    if (lenis) locked ? lenis.stop() : lenis.start();
   };
 
   // anchor navigation — move focus too (WCAG 2.4.1 / 2.4.3)
@@ -102,8 +94,7 @@
     else if (y < lastY - 4 || y <= 140) header.classList.remove('is-hidden');
     lastY = y;
   };
-  if (lenis) lenis.on('scroll', ({ scroll }) => onScrollHeader(scroll));
-  else window.addEventListener('scroll', () => onScrollHeader(window.scrollY), { passive: true });
+  window.addEventListener('scroll', () => onScrollHeader(window.scrollY), { passive: true });
   // keyboard users must never focus an off-screen header control
   header.addEventListener('focusin', () => header.classList.remove('is-hidden'));
 
@@ -119,6 +110,7 @@
     SFX.toggle();
     header.classList.remove('is-hidden');
     menu.classList.add('is-open');
+    menu.inert = false;
     menuBtn.classList.add('is-open');
     menu.setAttribute('aria-hidden', 'false');
     menuBtn.setAttribute('aria-expanded', 'true');
@@ -132,6 +124,7 @@
     if (!menu.classList.contains('is-open')) return;
     SFX.toggle();
     menu.classList.remove('is-open');
+    menu.inert = true;
     menuBtn.classList.remove('is-open');
     menu.setAttribute('aria-hidden', 'true');
     menuBtn.setAttribute('aria-expanded', 'false');
@@ -207,122 +200,6 @@
   };
   initMagnetic();
 
-  /* ---------------- Hero particle field ---------------- */
-  class HeroField {
-    constructor(canvas, animated) {
-      this.canvas = canvas;
-      this.animated = animated;
-      this.ctx = canvas.getContext('2d', { alpha: true });
-      this.mouse = { x: -9999, y: -9999 };
-      this.running = false;
-      this.visible = true;
-      this.paused = false;
-      this.dpr = Math.min(window.devicePixelRatio || 1, 1.75);
-      this.refreshColors();
-      this.build();
-      let resizeT = null;
-      let lastW = innerWidth;
-      window.addEventListener('resize', () => {
-        clearTimeout(resizeT);
-        resizeT = setTimeout(() => {
-          // ignore mobile URL-bar height jitter — rebuild only on real changes
-          const r = this.canvas.parentElement.getBoundingClientRect();
-          if (Math.abs(r.width * this.dpr - this.w) < 2 && Math.abs(r.height * this.dpr - this.h) < 160 * this.dpr) return;
-          lastW = innerWidth;
-          this.build();
-          if (!this.animated) this.drawFrame(0);
-        }, 150);
-      }, { passive: true });
-      if (animated) {
-        window.addEventListener('mousemove', e => {
-          const r = this.canvas.getBoundingClientRect();
-          this.mouse.x = (e.clientX - r.left) * this.dpr;
-          this.mouse.y = (e.clientY - r.top) * this.dpr;
-        }, { passive: true });
-        window.addEventListener('mouseout', () => { this.mouse.x = -9999; this.mouse.y = -9999; });
-        new IntersectionObserver(([en]) => {
-          this.visible = en.isIntersecting;
-          this.toggle();
-        }).observe(canvas);
-        doc.addEventListener('visibilitychange', () => this.toggle());
-      }
-    }
-    refreshColors() {
-      const cs = getComputedStyle(root);
-      this.accent = cs.getPropertyValue('--accent').trim();
-      const dark = root.dataset.theme === 'dark';
-      this.dotAlpha = dark ? 0.34 : 0.3;
-      this.dotColor = dark ? '237, 233, 224' : '25, 22, 17';
-      if (!this.animated && this.pts) this.drawFrame(0);
-    }
-    build() {
-      const r = this.canvas.parentElement.getBoundingClientRect();
-      this.w = this.canvas.width = Math.round(r.width * this.dpr);
-      this.h = this.canvas.height = Math.round(r.height * this.dpr);
-      const gap = Math.max(26, Math.round(this.w / 68));
-      this.pts = [];
-      for (let y = gap; y < this.h - gap * 0.4; y += gap) {
-        for (let x = gap; x < this.w - gap * 0.4; x += gap) {
-          this.pts.push({
-            bx: x, by: y, x, y,
-            vx: 0, vy: 0,
-            seed: Math.random() * Math.PI * 2,
-            accent: Math.random() < 0.045
-          });
-        }
-      }
-      this.radius = Math.min(this.w, this.h) * 0.22;
-    }
-    setPaused(p) { this.paused = p; this.toggle(); }
-    toggle() {
-      const should = this.animated && this.visible && !this.paused && !doc.hidden;
-      if (should && !this.running) { this.running = true; this.raf = requestAnimationFrame(t => this.frame(t)); }
-      if (!should) { this.running = false; cancelAnimationFrame(this.raf); }
-    }
-    drawFrame(t) {
-      const { ctx, pts, mouse, radius } = this;
-      ctx.clearRect(0, 0, this.w, this.h);
-      const time = t * 0.00045;
-      const size = 1.6 * this.dpr;
-      for (let i = 0; i < pts.length; i++) {
-        const p = pts[i];
-        const dx0 = Math.sin(time + p.seed) * 3.2 * this.dpr;
-        const dy0 = Math.cos(time * 0.8 + p.seed * 1.3) * 3.2 * this.dpr;
-        let tx = p.bx + dx0, ty = p.by + dy0;
-        const mx = tx - mouse.x, my = ty - mouse.y;
-        const d2 = mx * mx + my * my;
-        if (d2 < radius * radius) {
-          const d = Math.sqrt(d2) || 1;
-          const f = (1 - d / radius) * 34 * this.dpr;
-          tx += (mx / d) * f;
-          ty += (my / d) * f;
-        }
-        p.vx = (p.vx + (tx - p.x) * 0.09) * 0.86;
-        p.vy = (p.vy + (ty - p.y) * 0.09) * 0.86;
-        p.x += p.vx; p.y += p.vy;
-        const stretch = Math.min(3, Math.abs(p.vx) + Math.abs(p.vy));
-        if (p.accent) {
-          ctx.fillStyle = this.accent;
-          ctx.globalAlpha = 0.8;
-        } else {
-          ctx.fillStyle = `rgb(${this.dotColor})`;
-          ctx.globalAlpha = this.dotAlpha * (0.55 + 0.45 * Math.sin(time * 2 + p.seed * 3));
-        }
-        ctx.fillRect(p.x, p.y, size + stretch, size);
-      }
-      ctx.globalAlpha = 1;
-    }
-    frame(t) {
-      if (!this.running) return;
-      this.drawFrame(t);
-      this.raf = requestAnimationFrame(tt => this.frame(tt));
-    }
-  }
-  const heroCanvas = doc.querySelector('[data-hero-canvas]');
-  let heroField = null;
-  // hero grid field retired — the site-wide morphing particle field owns the
-  // background now (two dot systems in the hero fought each other visually)
-
   /* ---------------- Ambient particle field — scroll-morphing 3D shapes ----------------
      Thousands of dots form a 3D shape per section; scrolling morphs the cloud
      into the next shape while it slowly rotates. Cursor pushes particles away. */
@@ -340,6 +217,7 @@
       this.lastScroll = this.scroll;
       this.spin = 0;
       this.spinVel = 0.0032;
+      this.lastPaint = 0;
       this.refreshColors();
       this.build();
       let rt;
@@ -485,7 +363,9 @@
       this.h = this.canvas.height = Math.round(vh * this.dpr);
       // capped at 1000: the sim + per-particle draw was eating half the frame
       // budget on integrated-GPU laptops, and Lenis scroll queues behind it
-      const count = Math.min(1000, Math.max(550, Math.round((vw * vh) / 620)));
+      const ceiling = LOW_POWER ? 420 : 700;
+      const floor = LOW_POWER ? 260 : 420;
+      const count = Math.min(ceiling, Math.max(floor, Math.round((vw * vh) / 900)));
       this.pts = Array.from({ length: count }, () => ({
         x: (Math.random() - 0.5) * 3, y: (Math.random() - 0.5) * 3, z: (Math.random() - 0.5) * 3,
         tx: 0, ty: 0, tz: 0, vx: 0, vy: 0, vz: 0,
@@ -615,15 +495,20 @@
     }
     frame(t) {
       if (!this.running) return;
-      this.drawFrame(t);
+      // Ambient motion does not need a 60fps simulation. Capping the paint
+      // rate leaves the main thread free for scrolling and image decoding.
+      if (t - this.lastPaint >= 32) {
+        this.lastPaint = t;
+        this.drawFrame(t);
+      }
       this.raf = requestAnimationFrame(tt => this.frame(tt));
     }
   }
   const ambientCanvas = doc.querySelector('[data-ambient]');
   let ambientField = null;
   if (ambientCanvas && !REDUCED) {
-    ambientField = new AmbientField(ambientCanvas, FINE_POINTER);
-    if (FINE_POINTER) ambientField.toggle();
+    ambientField = new AmbientField(ambientCanvas, FINE_POINTER && !LOW_POWER);
+    if (FINE_POINTER && !LOW_POWER) ambientField.toggle();
     // always paint one frame so the field is never blank (touch devices,
     // or the page loading in a hidden tab)
     if (!ambientField.running) ambientField.drawFrame(performance.now());
@@ -642,7 +527,6 @@
       motionToggle.setAttribute('aria-pressed', String(motionPaused));
       motionToggle.setAttribute('aria-label', motionPaused ? 'Resume animations' : 'Pause animations');
       if (marqueeTween) motionPaused ? marqueeTween.pause() : marqueeTween.play();
-      heroField && heroField.setPaused(motionPaused);
       ambientField && ambientField.setPaused(motionPaused);
     });
   }
@@ -686,68 +570,184 @@
   // Featured
   const featured = projects.filter(p => p.featured);
   if (featuredList) {
-    featuredList.innerHTML = featured.map((p, i) => `
-      <article class="feature" data-reveal>
-        <button class="feature__media" data-case-open="${esc(p.id)}" data-cursor-view="Open" aria-label="Open case study: ${esc(p.title)}">
-          <span class="feature__badge chip">${esc(p.client)}</span>
-          ${imgTag(p.card.img, '', p.card.w, p.card.h)}
-        </button>
-        <div class="feature__body">
-          <span class="feature__index mono-label">F.0${i + 1} — ${esc(p.categoryLabel)}</span>
-          <h3 class="feature__title">${esc(p.title)}</h3>
-          <p class="feature__desc">${esc(p.sub)}</p>
-          <div class="feature__tags">${p.tags.slice(0, 4).map(t => `<span class="tag">${esc(t)}</span>`).join('')}</div>
-          <button class="link-more" data-case-open="${esc(p.id)}">Open case study <i>→</i></button>
+    const first = featured[0];
+    featuredList.innerHTML = `
+      <section class="featured-dossier" data-featured-dossier data-reveal aria-label="Selected case studies">
+        <div class="featured-dossier__tabs" role="tablist" aria-label="Choose case study">
+          ${featured.map((p, i) => `<button role="tab" data-featured-go="${i}" aria-selected="${i === 0 ? 'true' : 'false'}">
+            <span>0${i + 1}</span>
+            <strong>${esc(p.client)}</strong>
+            <small>${esc(p.categoryLabel)}</small>
+          </button>`).join('')}
         </div>
-      </article>`).join('');
-  }
 
-  // Deck-deal intro: when Selected Work scrolls in, the four project cards
-  // stack at the viewport centre, fan out like a hand of cards, then each
-  // one flies off toward its real spot down the page.
-  if (featuredList && featured.length > 1 && !REDUCED && FINE_POINTER) {
-    const deckIntro = () => {
-      const workSec = doc.getElementById('work');
-      if (!workSec || workSec.getBoundingClientRect().bottom < 0) return; // arrived via deep link, section already behind us
-      const cards = [...featuredList.querySelectorAll('.feature__media')];
-      if (!cards.length) return;
-      const overlay = doc.createElement('div');
-      overlay.className = 'deal-overlay';
-      overlay.setAttribute('aria-hidden', 'true');
-      const clones = featured.map(p => {
-        const img = doc.createElement('img');
-        img.src = encodeURI(p.card.img);
-        img.alt = '';
-        img.className = 'deal-card';
-        img.style.aspectRatio = `${p.card.w} / ${p.card.h}`;
-        overlay.appendChild(img);
-        return img;
+        <div class="featured-dossier__board">
+          <aside class="featured-dossier__brief">
+            <span class="mono-label" data-featured-index>Case 01 / ${String(featured.length).padStart(2, '0')}</span>
+            <h3 data-featured-title>${esc(first.title)}</h3>
+            <p class="featured-dossier__client" data-featured-client>${esc(first.client)} · ${esc(first.categoryLabel)}</p>
+            <dl>
+              <div><dt>Industry</dt><dd data-featured-industry>${esc(first.industry)}</dd></div>
+              <div><dt>Role</dt><dd data-featured-role>${esc(first.role)}</dd></div>
+            </dl>
+            <div class="featured-dossier__stats" data-featured-stats>
+              ${(first.stats || []).map(stat => `<div><strong>${esc(stat.num)}${esc(stat.suffix || '')}</strong><span>${esc(stat.label)}</span></div>`).join('')}
+            </div>
+          </aside>
+
+          <div class="featured-dossier__stage" data-featured-stage tabindex="0" role="group"
+            aria-label="Selected work — case study artwork viewer">
+            <span class="featured-dossier__grid" aria-hidden="true"></span>
+            <span class="featured-dossier__coordinate featured-dossier__coordinate--top mono-label" aria-hidden="true">CASE FILE / 2026</span>
+            <span class="featured-dossier__coordinate featured-dossier__coordinate--side mono-label" aria-hidden="true">STRATEGY → SYSTEM → RESULT</span>
+            ${featured.map((p, i) => `<button class="featured-dossier__card" data-featured-card="${i}" data-featured-id="${esc(p.id)}"
+              style="--featured-ar: ${p.card.w} / ${p.card.h}" aria-label="Select ${esc(p.title)}">
+              <span class="featured-dossier__frame">
+                ${imgTag(p.card.img, `${p.title} — ${p.client}`, p.card.w, p.card.h)}
+                <span class="featured-dossier__folio mono-label" aria-hidden="true">0${i + 1}</span>
+              </span>
+            </button>`).join('')}
+            <div class="featured-dossier__caption" aria-live="polite">
+              <small class="mono-label">Selected case study</small>
+              <strong data-featured-active-title>${esc(first.title)}</strong>
+            </div>
+          </div>
+
+          <aside class="featured-dossier__preview">
+            <span class="mono-label">Case study preview</span>
+            <h4>The brief</h4>
+            <p data-featured-summary>${esc(first.sub)}</p>
+            <div class="featured-dossier__tags" data-featured-tags>
+              ${first.tags.slice(0, 4).map(t => `<span class="tag">${esc(t)}</span>`).join('')}
+            </div>
+            <button class="featured-dossier__open" data-featured-open data-case-open="${esc(first.id)}"
+              aria-label="Open case study: ${esc(first.title)}">
+              <span>Open full case study</span><i aria-hidden="true">↗</i>
+            </button>
+          </aside>
+        </div>
+
+        <footer class="featured-dossier__footer">
+          <span class="featured-dossier__progress" aria-hidden="true"><i data-featured-progress></i></span>
+          <p>Choose a case file · swipe or use the touchpad · open for the full problem-to-outcome story</p>
+        </footer>
+      </section>`;
+
+    const featuredDossier = featuredList.querySelector('[data-featured-dossier]');
+    const featuredStage = featuredDossier.querySelector('[data-featured-stage]');
+    const featuredCards = [...featuredDossier.querySelectorAll('[data-featured-card]')];
+    const featuredTabs = [...featuredDossier.querySelectorAll('[data-featured-go]')];
+    const featuredProgress = featuredDossier.querySelector('[data-featured-progress]');
+    const featuredOpen = featuredDossier.querySelector('[data-featured-open]');
+    const featuredIndex = featuredDossier.querySelector('[data-featured-index]');
+    const featuredTitle = featuredDossier.querySelector('[data-featured-title]');
+    const featuredClient = featuredDossier.querySelector('[data-featured-client]');
+    const featuredIndustry = featuredDossier.querySelector('[data-featured-industry]');
+    const featuredRole = featuredDossier.querySelector('[data-featured-role]');
+    const featuredStats = featuredDossier.querySelector('[data-featured-stats]');
+    const featuredSummary = featuredDossier.querySelector('[data-featured-summary]');
+    const featuredTags = featuredDossier.querySelector('[data-featured-tags]');
+    const featuredActiveTitle = featuredDossier.querySelector('[data-featured-active-title]');
+    let featuredActive = 0;
+    let featuredStartX = 0, featuredStartY = 0, featuredDragged = false;
+    let featuredWheel = 0, featuredWheelAt = 0;
+
+    const renderFeatured = next => {
+      featuredActive = (next + featured.length) % featured.length;
+      const project = featured[featuredActive];
+      featuredCards.forEach((card, index) => {
+        let position = index - featuredActive;
+        if (position > featured.length / 2) position -= featured.length;
+        if (position < -featured.length / 2) position += featured.length;
+        if (position === featured.length / 2) position = -position;
+        const active = position === 0;
+        card.dataset.position = String(Math.max(-2, Math.min(2, position)));
+        card.tabIndex = Math.abs(position) <= 1 ? 0 : -1;
+        card.setAttribute('aria-hidden', Math.abs(position) <= 1 ? 'false' : 'true');
+        card.setAttribute('aria-pressed', String(active));
+        card.setAttribute('aria-label', `${active ? 'Open case study' : 'Select case study'}: ${featured[index].title}`);
+        if (active) {
+          card.dataset.caseOpen = card.dataset.featuredId;
+          card.dataset.cursorView = 'Open';
+        } else {
+          delete card.dataset.caseOpen;
+          delete card.dataset.cursorView;
+        }
       });
-      doc.body.appendChild(overlay);
-      setTimeout(() => overlay.remove(), 9000); // failsafe if the tab hides mid-animation
-      const mid = (clones.length - 1) / 2;
-      const cx = innerWidth / 2, cy = innerHeight / 2;
-      const fanX = Math.min(150, innerWidth * 0.11);
-      gsap.set(clones, {
-        xPercent: -50, yPercent: -50, x: cx, y: cy,
-        rotation: i => (i - mid) * 6, scale: 0.5, opacity: 0
+      featuredTabs.forEach((tab, index) => {
+        const selected = index === featuredActive;
+        tab.setAttribute('aria-selected', String(selected));
+        tab.tabIndex = selected ? 0 : -1;
       });
-      gsap.timeline({ defaults: { ease: 'power3.out' }, onComplete: () => overlay.remove() })
-        .to(clones, { opacity: 1, scale: 1, duration: 0.4, stagger: 0.06 })
-        .to(clones, {
-          rotation: i => (i - mid) * 17,
-          x: i => cx + (i - mid) * fanX,
-          y: i => cy - Math.abs(i - mid) * 16,
-          duration: 0.55, ease: 'back.out(1.5)'
-        }, '+=0.08')
-        .to(clones, {
-          x: i => { const r = cards[i].getBoundingClientRect(); return r.left + r.width / 2; },
-          y: i => { const r = cards[i].getBoundingClientRect(); return Math.min(innerHeight + 300, r.top + r.height / 2); },
-          rotation: 0, scale: 1.8, opacity: 0,
-          duration: 0.65, stagger: 0.1, ease: 'power2.in'
-        }, '+=0.4');
+      featuredIndex.textContent = `Case ${String(featuredActive + 1).padStart(2, '0')} / ${String(featured.length).padStart(2, '0')}`;
+      featuredTitle.textContent = project.title;
+      featuredClient.textContent = `${project.client} · ${project.categoryLabel}`;
+      featuredIndustry.textContent = project.industry;
+      featuredRole.textContent = project.role;
+      featuredStats.innerHTML = (project.stats || []).map(stat => `<div><strong>${esc(stat.num)}${esc(stat.suffix || '')}</strong><span>${esc(stat.label)}</span></div>`).join('');
+      featuredSummary.textContent = project.sub;
+      featuredTags.innerHTML = project.tags.slice(0, 4).map(tag => `<span class="tag">${esc(tag)}</span>`).join('');
+      featuredActiveTitle.textContent = project.title;
+      featuredOpen.dataset.caseOpen = project.id;
+      featuredOpen.setAttribute('aria-label', `Open case study: ${project.title}`);
+      featuredProgress.style.transform = `scaleX(${(featuredActive + 1) / featured.length})`;
     };
-    ScrollTrigger.create({ trigger: '#work', start: 'top 62%', once: true, onEnter: deckIntro });
+
+    const stepFeatured = direction => { SFX.flip(); renderFeatured(featuredActive + direction); };
+
+    featuredDossier.addEventListener('click', e => {
+      if (featuredDragged) {
+        featuredDragged = false;
+        e.preventDefault();
+        e.stopPropagation();
+        return;
+      }
+      const tab = e.target.closest('[data-featured-go]');
+      if (tab) { SFX.flip(); renderFeatured(Number(tab.dataset.featuredGo)); return; }
+      const card = e.target.closest('[data-featured-card]');
+      if (!card) return;
+      const index = Number(card.dataset.featuredCard);
+      if (index !== featuredActive) {
+        e.preventDefault();
+        e.stopPropagation();
+        SFX.flip();
+        renderFeatured(index);
+      }
+    });
+    featuredStage.addEventListener('keydown', e => {
+      if (e.key === 'ArrowLeft') { e.preventDefault(); stepFeatured(-1); }
+      else if (e.key === 'ArrowRight') { e.preventDefault(); stepFeatured(1); }
+      else if (e.key === 'Home') { e.preventDefault(); renderFeatured(0); }
+      else if (e.key === 'End') { e.preventDefault(); renderFeatured(featured.length - 1); }
+    });
+    featuredStage.addEventListener('wheel', e => {
+      if (Math.abs(e.deltaX) <= Math.abs(e.deltaY) * 1.1) return;
+      e.preventDefault();
+      featuredWheel += e.deltaX;
+      const now = performance.now();
+      if (Math.abs(featuredWheel) >= 38 && now - featuredWheelAt > 360) {
+        stepFeatured(featuredWheel > 0 ? 1 : -1);
+        featuredWheel = 0;
+        featuredWheelAt = now;
+      }
+    }, { passive: false });
+    featuredStage.addEventListener('pointerdown', e => {
+      if (!e.isPrimary) return;
+      featuredStartX = e.clientX;
+      featuredStartY = e.clientY;
+      featuredDragged = false;
+    }, { passive: true });
+    featuredStage.addEventListener('pointerup', e => {
+      if (!e.isPrimary) return;
+      const deltaX = e.clientX - featuredStartX;
+      const deltaY = e.clientY - featuredStartY;
+      if (Math.abs(deltaX) >= 44 && Math.abs(deltaX) > Math.abs(deltaY) * 1.15) {
+        featuredDragged = true;
+        stepFeatured(deltaX < 0 ? 1 : -1);
+      }
+    }, { passive: true });
+    featuredStage.addEventListener('pointercancel', () => { featuredDragged = false; }, { passive: true });
+    renderFeatured(0);
   }
 
   /* ---------------- Case study overlay ---------------- */
@@ -802,6 +802,7 @@
     caseContent.innerHTML = caseHTML(p);
     caseScroll.scrollTop = 0;
     caseRootEl.classList.add('is-open');
+    caseRootEl.inert = false;
     caseRootEl.setAttribute('aria-hidden', 'false');
     if (!wasOpen) {
       header.inert = true;
@@ -819,6 +820,7 @@
     if (!caseRootEl.classList.contains('is-open')) return;
     SFX.close();
     caseRootEl.classList.remove('is-open');
+    caseRootEl.inert = true;
     caseRootEl.setAttribute('aria-hidden', 'true');
     header.inert = false;
     setBackgroundInert(false);
@@ -851,7 +853,9 @@
   const soundToggle = doc.querySelector('[data-sound-toggle]');
   const SFX = (() => {
     let ctx = null;
-    let enabled = store.get('ng-sfx') !== 'off';
+    // Keep audio opt-in: no AudioContext, oscillator farm or music timer is
+    // created until the visitor explicitly enables sound.
+    let enabled = store.get('ng-sfx') === 'on';
     const ensure = () => {
       if (!ctx) {
         const AC = window.AudioContext || window.webkitAudioContext;
@@ -1027,26 +1031,407 @@
     // 583 full-res JPEGs decoding mid-scroll was a major source of wheel lag.
     const [src, w, h] = it.thumb || it.cover;
     const pageCount = it.pages ? it.pages.length : 1;
-    return `
-      <button class="g-card" data-gal-open="${esc(it.id)}" data-cursor-view="View"
-        aria-label="View: ${esc(it.title)}${pageCount > 1 ? ` — ${pageCount} pages` : ''}">
-        <span class="g-card__media" style="--ar: ${w} / ${h}">
+    const isCarousel = it.cat === 'carousels' && pageCount > 1;
+    const isDeck = it.cat === 'decks' && pageCount > 1;
+    const deckRatio = isDeck ? w / h : 1;
+    const deckVars = isDeck
+      ? `--deck-ar: ${w} / ${h}; --deck-width: clamp(${Math.round(deckRatio * 190)}px, ${(deckRatio * 23).toFixed(2)}vw, ${Math.round(deckRatio * 270)}px); --deck-width-mobile: ${Math.round(deckRatio * 178)}px;`
+      : '';
+    const previews = isCarousel || isDeck
+      ? (it.previews || [it.thumb || it.cover, ...it.pages.slice(1, 3)]).slice(0, 3)
+      : [];
+    const frontContent = `
+      <span class="g-card__pages">${String(pageCount).padStart(2, '0')} ${isCarousel ? 'slides' : 'pages'}</span>
+      <span class="g-card__veil"><span class="g-card__title">${esc(it.title)}</span></span>`;
+    const deckMedia = isDeck
+      ? `<span class="g-card__deck-shell">
+          <span class="g-card__deck-stack">
+            ${previews.map((preview, i) => {
+              const [previewSrc, previewW, previewH] = preview;
+              return `<span class="g-card__deck-slide${i === 0 ? ' is-front' : ''}" style="--deck-slide: ${i}" aria-hidden="true">
+                <img src="${esc(previewSrc)}" alt="" width="${previewW}" height="${previewH}" loading="lazy" decoding="async">
+              </span>`;
+            }).join('')}
+            <span class="g-card__deck-spine" aria-hidden="true"></span>
+          </span>
+          <span class="g-card__deck-meta">
+            <span>
+              <small class="mono-label">Presentation deck</small>
+              <strong>${esc(it.title)}</strong>
+            </span>
+            <span class="g-card__deck-count"><b>${String(pageCount).padStart(2, '0')}</b><small>slides</small></span>
+          </span>
+        </span>`
+      : '';
+    const media = isCarousel
+      ? `<span class="g-card__media g-card__media--stack" style="--ar: ${w} / ${h}">
+          ${previews.map((preview, i) => {
+            const [previewSrc, previewW, previewH] = preview;
+            const front = i === 0;
+            return `<span class="g-card__sheet${front ? ' is-front' : ''}" style="--sheet: ${i}" aria-hidden="${front ? 'false' : 'true'}">
+              <img src="${encodeURI(previewSrc)}" alt="${front ? `${esc(it.title)} — ${esc(galCatLabel[it.cat] || '')}` : ''}"
+                width="${previewW}" height="${previewH}" loading="lazy" decoding="async">
+              ${front ? frontContent : ''}
+            </span>`;
+          }).reverse().join('')}
+        </span>`
+      : isDeck
+        ? deckMedia
+        : `<span class="g-card__media" style="--ar: ${w} / ${h}">
           <img src="${encodeURI(src)}" alt="${esc(it.title)} — ${esc(galCatLabel[it.cat] || '')}"
             width="${w}" height="${h}" loading="lazy" decoding="async">
-          ${pageCount > 1 ? `<span class="g-card__pages">${pageCount} pages</span>` : ''}
-          <span class="g-card__veil"><span class="g-card__title">${esc(it.title)}</span></span>
-        </span>
+          ${pageCount > 1 ? frontContent : `<span class="g-card__veil"><span class="g-card__title">${esc(it.title)}</span></span>`}
+        </span>`;
+    return `
+      <button class="g-card${isCarousel ? ' g-card--carousel' : ''}${isDeck ? ' g-card--deck' : ''}"${isDeck ? ` style="${deckVars}"` : ''} data-gal-open="${esc(it.id)}" data-cursor-view="View"
+        aria-label="View: ${esc(it.title)}${pageCount > 1 ? ` — ${pageCount} pages` : ''}">
+        ${media}
       </button>`;
   };
 
-  if (railsWrap && GAL.items.length) {
+  const socialCardHTML = (it, index) => {
+    const [src, w, h] = it.thumb || it.cover;
+    const format = w === h ? 'Square' : w < h ? 'Portrait' : 'Landscape';
+    return `<button class="social-tile" data-gal-open="${esc(it.id)}" data-cursor-view="View"
+      aria-label="View social post: ${esc(it.title)}">
+      <span class="social-tile__top">
+        <span class="social-tile__dot" aria-hidden="true"></span>
+        <span class="mono-label">Post ${String(index + 1).padStart(2, '0')}</span>
+        <span class="social-tile__format">${format}</span>
+      </span>
+      <span class="social-tile__media">
+        <img src="${encodeURI(src)}" alt="${esc(it.title)} — ${esc(galCatLabel[it.cat] || '')}"
+          width="${w}" height="${h}" loading="lazy" decoding="async">
+      </span>
+      <span class="social-tile__meta">
+        <strong>${esc(it.title)}</strong>
+        <span aria-hidden="true">↗</span>
+      </span>
+    </button>`;
+  };
+
+  const socialShowcaseHTML = (items, label) =>
+    `<div class="rail rail--social" data-reveal>
+      <div class="rail__head">
+        <div>
+          <h3 class="rail__title">${esc(label)}<sup>${items.length}</sup></h3>
+          <p class="rail__note">Campaign-ready feed creatives · swipe through the series</p>
+        </div>
+        <div class="rail__nav">
+          <button class="rail__btn" data-rail-prev aria-label="Scroll ${esc(label)} back">←</button>
+          <button class="rail__btn" data-rail-next aria-label="Scroll ${esc(label)} forward">→</button>
+        </div>
+      </div>
+      <div class="rail__track social-carousel" data-rail-track role="group" aria-label="${esc(label)} — ${items.length} pieces">
+        ${items.map(socialCardHTML).join('')}
+      </div>
+    </div>`;
+
+  const festivalCardHTML = (it, index) => {
+    const [src, w, h] = it.thumb || it.cover;
+    return `<button class="festival-card" data-gal-open="${esc(it.id)}" data-cursor-view="View"
+      aria-label="View moment: ${esc(it.title)}">
+      <span class="festival-card__tab" aria-hidden="true">
+        <small>Moment</small>
+        <b>${String(index + 1).padStart(2, '0')}</b>
+      </span>
+      <span class="festival-card__media">
+        <img src="${encodeURI(src)}" alt="${esc(it.title)} — ${esc(galCatLabel[it.cat] || '')}"
+          width="${w}" height="${h}" loading="lazy" decoding="async">
+      </span>
+      <span class="festival-card__meta">
+        <span>
+          <small class="mono-label">Cultural calendar</small>
+          <strong>${esc(it.title)}</strong>
+        </span>
+        <span class="festival-card__open" aria-hidden="true">View ↗</span>
+      </span>
+    </button>`;
+  };
+
+  const festivalShowcaseHTML = (items, label) =>
+    `<div class="rail rail--festivals" data-reveal>
+      <div class="rail__head">
+        <div>
+          <h3 class="rail__title">${esc(label)}<sup>${items.length}</sup></h3>
+          <p class="rail__note">A cultural calendar · festivals, observances and live moments</p>
+        </div>
+        <div class="rail__nav">
+          <button class="rail__btn" data-rail-prev aria-label="Scroll ${esc(label)} back">←</button>
+          <button class="rail__btn" data-rail-next aria-label="Scroll ${esc(label)} forward">→</button>
+        </div>
+      </div>
+      <div class="rail__track festival-timeline" data-rail-track role="group" aria-label="${esc(label)} — ${items.length} pieces">
+        ${items.map(festivalCardHTML).join('')}
+      </div>
+    </div>`;
+
+  const thumbnailCardHTML = (it, index) => {
+    const [src, w, h] = it.thumb || it.cover;
+    return `<button class="thumbnail-card" data-gal-open="${esc(it.id)}" data-cursor-view="View"
+      aria-label="View YouTube thumbnail: ${esc(it.title)}">
+      <span class="thumbnail-card__chrome" aria-hidden="true">
+        <span class="thumbnail-card__lights"><i></i><i></i><i></i></span>
+        <span class="mono-label">Video ${String(index + 1).padStart(2, '0')}</span>
+        <span class="thumbnail-card__ratio">16:9</span>
+      </span>
+      <span class="thumbnail-card__screen">
+        <img src="${encodeURI(src)}" alt="${esc(it.title)} — ${esc(galCatLabel[it.cat] || '')}"
+          width="${w}" height="${h}" loading="lazy" decoding="async">
+        <span class="thumbnail-card__play" aria-hidden="true">▶</span>
+        <span class="thumbnail-card__progress" aria-hidden="true"><i></i></span>
+      </span>
+      <span class="thumbnail-card__meta">
+        <span>
+          <small class="mono-label">YouTube thumbnail</small>
+          <strong>${esc(it.title)}</strong>
+        </span>
+        <span class="thumbnail-card__open" aria-hidden="true">Open ↗</span>
+      </span>
+    </button>`;
+  };
+
+  const thumbnailShowcaseHTML = (items, label) =>
+    `<div class="rail rail--thumbnails" data-reveal>
+      <div class="rail__head">
+        <div>
+          <h3 class="rail__title">${esc(label)}<sup>${items.length}</sup></h3>
+          <p class="rail__note">Editorial video covers · built for the first click</p>
+        </div>
+        <div class="rail__nav">
+          <button class="rail__btn" data-rail-prev aria-label="Scroll ${esc(label)} back">←</button>
+          <button class="rail__btn" data-rail-next aria-label="Scroll ${esc(label)} forward">→</button>
+        </div>
+      </div>
+      <div class="rail__track thumbnail-reel" data-rail-track role="group" aria-label="${esc(label)} — ${items.length} pieces">
+        ${items.map(thumbnailCardHTML).join('')}
+      </div>
+    </div>`;
+
+  const bannerCardHTML = (it, index, total) => {
+    const [src, w, h] = it.thumb || it.cover;
+    const [, fullW, fullH] = it.cover || it.thumb;
+    return `<button class="banner-browser" style="--banner-ar: ${w} / ${h}" data-gal-open="${esc(it.id)}"
+      data-cursor-view="View" aria-label="View website banner: ${esc(it.title)}">
+      <span class="banner-browser__chrome" aria-hidden="true">
+        <span class="banner-browser__lights"><i></i><i></i><i></i></span>
+        <span class="banner-browser__address"><i>●</i> campaign.preview / ${String(index + 1).padStart(2, '0')}</span>
+        <span class="mono-label">${String(index + 1).padStart(2, '0')} / ${String(total).padStart(2, '0')}</span>
+      </span>
+      <span class="banner-browser__viewport">
+        <img src="${encodeURI(src)}" alt="${esc(it.title)} — ${esc(galCatLabel[it.cat] || '')}"
+          width="${w}" height="${h}" loading="lazy" decoding="async">
+        <span class="banner-browser__status" aria-hidden="true"><i></i></span>
+      </span>
+      <span class="banner-browser__meta">
+        <span>
+          <small class="mono-label">Live campaign canvas · ${fullW} × ${fullH}</small>
+          <strong>${esc(it.title)}</strong>
+        </span>
+        <span class="banner-browser__open" aria-hidden="true">Inspect ↗</span>
+      </span>
+    </button>`;
+  };
+
+  const bannerShowcaseHTML = (items, label) =>
+    `<div class="rail rail--banners" data-reveal>
+      <div class="rail__head">
+        <div>
+          <span class="mono-label banner-lab__eyebrow">Responsive display lab</span>
+          <h3 class="rail__title">${esc(label)}<sup>${items.length}</sup></h3>
+          <p class="rail__note">Campaign canvases · previewed at their native proportions</p>
+        </div>
+        <div class="rail__nav">
+          <button class="rail__btn" data-rail-prev aria-label="Scroll ${esc(label)} back">←</button>
+          <button class="rail__btn" data-rail-next aria-label="Scroll ${esc(label)} forward">→</button>
+        </div>
+      </div>
+      <div class="rail__track banner-browser-strip" data-rail-track role="group"
+        aria-label="${esc(label)} — ${items.length} pieces">
+        ${items.map((it, index) => bannerCardHTML(it, index, items.length)).join('')}
+      </div>
+    </div>`;
+
+  const flyerShowcaseHTML = (items, label) =>
+    `<section class="rail rail--flyers flyer-slider" data-flyer-slider data-reveal aria-labelledby="flyer-slider-title">
+      <header class="flyer-slider__head">
+        <div>
+          <span class="mono-label flyer-slider__eyebrow">Print editions · ${items.length} selected pieces</span>
+          <h3 class="flyer-slider__title" id="flyer-slider-title">Flyers <em>&amp; posters</em></h3>
+          <p class="rail__note">Promotional print, event communication and campaign collateral</p>
+        </div>
+        <div class="flyer-slider__active" aria-live="polite">
+          <small class="mono-label">Selected artwork</small>
+          <strong data-flyer-active-label>${esc(items[Math.min(1, items.length - 1)].title)}</strong>
+        </div>
+      </header>
+      <div class="flyer-slider__stage" data-flyer-stage tabindex="0" role="group"
+        aria-label="${esc(label)} — overlapping artwork slider">
+        ${items.map((it, index) => {
+          const [src, w, h] = it.thumb || it.cover;
+          return `<button class="flyer-slider__card" style="--flyer-ar: ${w} / ${h}"
+            data-flyer-card="${index}" data-flyer-id="${esc(it.id)}" aria-label="Select ${esc(it.title)}">
+            <span class="flyer-slider__art">
+              <img src="${encodeURI(src)}" alt="${esc(it.title)} — ${esc(label)}"
+                width="${w}" height="${h}" loading="lazy" decoding="async">
+              <span class="flyer-slider__folio mono-label" aria-hidden="true">${String(index + 1).padStart(2, '0')}</span>
+            </span>
+          </button>`;
+        }).join('')}
+      </div>
+      <footer class="flyer-slider__footer">
+        <span class="flyer-slider__progress" aria-hidden="true"><i data-flyer-progress></i></span>
+        <div class="flyer-slider__indices" aria-label="Choose artwork">
+          ${items.map((it, index) => `<button data-flyer-go="${index}" aria-label="Show artwork ${index + 1}: ${esc(it.title)}">${index + 1}</button>`).join('')}
+        </div>
+      </footer>
+      <p class="flyer-slider__hint">Select a side piece to bring it forward · open the centre artwork for full view</p>
+    </section>`;
+
+  const interiorShowcaseHTML = (items, label) => {
+    const series = [
+      {
+        key: 'araya',
+        name: 'Araya Estates',
+        location: 'Noida · Uttarakhand',
+        discipline: 'Property campaigns',
+        note: 'High-ticket listings shaped with a quieter, hospitality-led visual language.',
+        items: items.filter(it => it.title.toLowerCase().startsWith('aaraya'))
+      },
+      {
+        key: 'kosha',
+        name: 'Kosha Spaces',
+        location: 'Dubai · Residential',
+        discipline: 'Interior storytelling',
+        note: 'Editorial social systems designed to feel as considered as the spaces themselves.',
+        items: items.filter(it => !it.title.toLowerCase().startsWith('aaraya'))
+      }
+    ].filter(group => group.items.length);
+    const initial = series[0];
+    const allCards = series.flatMap(group => group.items.map((it, index) => ({ it, index, group })));
+
+    return `<section class="rail rail--interior interior-dossier" data-interior-showcase data-reveal
+      aria-labelledby="interior-dossier-title">
+      <header class="interior-dossier__head">
+        <div>
+          <span class="mono-label interior-dossier__eyebrow">Spatial brand systems · ${items.length} selected pieces</span>
+          <h3 class="interior-dossier__title" id="interior-dossier-title">Interior <em>&amp; real estate</em></h3>
+        </div>
+        <p>Two brands. One measured visual language for spaces, listings and considered living.</p>
+      </header>
+
+      <div class="interior-dossier__series" role="tablist" aria-label="Choose project series">
+        ${series.map((group, index) => `<button role="tab" data-interior-tab="${esc(group.key)}"
+          aria-selected="${index === 0 ? 'true' : 'false'}">
+          <span>0${index + 1}</span><strong>${esc(group.name)}</strong><small>${group.items.length} pieces</small>
+        </button>`).join('')}
+      </div>
+
+      <div class="interior-dossier__board">
+        <aside class="interior-dossier__brief">
+          <span class="mono-label" data-interior-series-label>Series 01 / ${String(series.length).padStart(2, '0')}</span>
+          <h4 data-interior-brand>${esc(initial.name)}</h4>
+          <p data-interior-copy>${esc(initial.note)}</p>
+          <dl>
+            <div><dt>Location</dt><dd data-interior-location>${esc(initial.location)}</dd></div>
+            <div><dt>Discipline</dt><dd data-interior-discipline>${esc(initial.discipline)}</dd></div>
+            <div><dt>Editions</dt><dd data-interior-count>${String(initial.items.length).padStart(2, '0')}</dd></div>
+          </dl>
+          <div class="interior-dossier__step">
+            <button data-interior-prev aria-label="Previous interior artwork">Prev</button>
+            <span><b data-interior-current>01</b> / <span data-interior-total>${String(initial.items.length).padStart(2, '0')}</span></span>
+            <button data-interior-next aria-label="Next interior artwork">Next</button>
+          </div>
+        </aside>
+
+        <div class="interior-dossier__stage" data-interior-stage tabindex="0" role="group"
+          aria-label="${esc(label)} — architectural artwork viewer">
+          <span class="interior-dossier__grid" aria-hidden="true"></span>
+          <span class="interior-dossier__coordinate interior-dossier__coordinate--top mono-label" aria-hidden="true">28.5355° N</span>
+          <span class="interior-dossier__coordinate interior-dossier__coordinate--side mono-label" aria-hidden="true">77.3910° E</span>
+          ${allCards.map(({ it, index, group }) => {
+            const [src, w, h] = it.thumb || it.cover;
+            return `<button class="interior-dossier__card" style="--interior-ar: ${w} / ${h}"
+              data-interior-card="${index}" data-interior-series="${esc(group.key)}" data-interior-id="${esc(it.id)}"
+              aria-label="Select ${esc(it.title)}">
+              <span class="interior-dossier__frame">
+                <img src="${encodeURI(src)}" alt="${esc(it.title)} — ${esc(group.name)}"
+                  width="${w}" height="${h}" loading="lazy" decoding="async">
+                <span class="interior-dossier__folio mono-label" aria-hidden="true">${String(index + 1).padStart(2, '0')}</span>
+              </span>
+            </button>`;
+          }).join('')}
+          <div class="interior-dossier__caption" aria-live="polite">
+            <small class="mono-label">Selected campaign frame</small>
+            <strong data-interior-active-title>${esc(initial.items[0].title)}</strong>
+          </div>
+        </div>
+      </div>
+
+      <footer class="interior-dossier__index">
+        <div class="interior-dossier__progress" aria-hidden="true"><i data-interior-progress></i></div>
+        <div class="interior-dossier__thumbs" data-interior-thumbs aria-label="Artwork index">
+          ${allCards.map(({ it, index, group }) => {
+            const [src, w, h] = it.thumb || it.cover;
+            return `<button data-interior-go="${index}" data-interior-series="${esc(group.key)}"
+              aria-label="Show ${esc(group.name)} artwork ${index + 1}: ${esc(it.title)}">
+              <img src="${encodeURI(src)}" alt="" width="${w}" height="${h}" loading="lazy" decoding="async">
+              <span>${String(index + 1).padStart(2, '0')}</span>
+            </button>`;
+          }).join('')}
+        </div>
+        <p>Choose a frame · swipe or use the touchpad · open the centre piece for full view</p>
+      </footer>
+    </section>`;
+  };
+
+  const aiShowcaseHTML = (items, label) => `
+    <section class="rail rail--ai-ads ai-coverflow" data-ai-coverflow data-reveal aria-labelledby="ai-coverflow-title">
+      <header class="ai-coverflow__head">
+        <div>
+          <span class="mono-label ai-coverflow__eyebrow">AI ad campaigns · ${items.length} concepts</span>
+          <h3 class="ai-coverflow__title" id="ai-coverflow-title">Parachute <em>visual worlds</em></h3>
+        </div>
+        <p class="mono-label ai-coverflow__context">Coconut Oil · Spec Campaign · 2026</p>
+      </header>
+      <div class="ai-coverflow__stage" role="group" aria-label="${esc(label)} — interactive coverflow">
+        ${items.map((it, i) => {
+          const [src, w, h] = it.thumb || it.cover;
+          return `<button class="ai-coverflow__card" data-ai-card="${esc(it.id)}" data-ai-index="${i}"
+            aria-label="Select concept ${i + 1}: ${esc(it.title)}">
+            <span class="ai-coverflow__media">
+              <img src="${encodeURI(src)}" alt="${esc(it.title)}" width="${w}" height="${h}" loading="lazy" decoding="async">
+            </span>
+            <span class="ai-coverflow__card-copy">
+              <strong>Concept ${String(i + 1).padStart(2, '0')}</strong>
+              <small>Parachute · AI art direction</small>
+            </span>
+          </button>`;
+        }).join('')}
+      </div>
+    </section>`;
+
+  const initGallery = () => {
+    if (!railsWrap || !GAL.items.length || railsWrap.dataset.galleryReady === 'true') return;
+    railsWrap.dataset.galleryReady = 'true';
     railsWrap.innerHTML = GAL.categories.map(([key, label]) => {
       const items = GAL.items.filter(it => it.cat === key);
       if (!items.length) return '';
+      if (key === 'ai-ads') return aiShowcaseHTML(items, label);
+      if (key === 'social') return socialShowcaseHTML(items, label);
+      if (key === 'festivals') return festivalShowcaseHTML(items, label);
+      if (key === 'thumbnails') return thumbnailShowcaseHTML(items, label);
+      if (key === 'banners') return bannerShowcaseHTML(items, label);
+      if (key === 'flyers') return flyerShowcaseHTML(items, label);
+      if (key === 'interior') return interiorShowcaseHTML(items, label);
       return `
-        <div class="rail" data-reveal>
+        <div class="rail rail--${esc(key)}" data-reveal>
           <div class="rail__head">
-            <h3 class="rail__title">${esc(label)}<sup>${items.length}</sup></h3>
+            <div>
+              <h3 class="rail__title">${esc(label)}<sup>${items.length}</sup></h3>
+              ${key === 'carousels' ? '<p class="rail__note">Multi-slide stories · stacked to reveal the sequence</p>' : ''}
+              ${key === 'decks' ? '<p class="rail__note">Presentation systems · layered slide previews</p>' : ''}
+            </div>
             <div class="rail__nav">
               <button class="rail__btn" data-rail-prev aria-label="Scroll ${esc(label)} back">←</button>
               <button class="rail__btn" data-rail-next aria-label="Scroll ${esc(label)} forward">→</button>
@@ -1057,6 +1442,442 @@
           </div>
         </div>`;
     }).join('');
+
+    // Reference-style 3D coverflow for AI campaign concepts.
+    const aiFlow = railsWrap.querySelector('[data-ai-coverflow]');
+    if (aiFlow) {
+      const aiCards = [...aiFlow.querySelectorAll('[data-ai-card]')];
+      const total = aiCards.length;
+      let active = Math.floor(total / 2);
+      let autoTimer = 0;
+      let resumeTimer = 0;
+      let wheelDelta = 0;
+      let lastWheelStep = 0;
+      let touchStartX = 0;
+      let touchStartY = 0;
+      let inView = false;
+      let hoverPaused = false;
+      let focusPaused = false;
+      // Match the card transition so the next concept starts as soon as the
+      // current movement settles, without a static pause between slides.
+      const AUTO_DELAY = 680;
+      const MANUAL_PAUSE = 720;
+      const states = ['is-active', 'is-before-1', 'is-before-2', 'is-after-1', 'is-after-2', 'is-far'];
+
+      const renderAiFlow = next => {
+        active = (next + total) % total;
+        aiCards.forEach((card, i) => {
+          let delta = i - active;
+          if (delta > total / 2) delta -= total;
+          if (delta < -total / 2) delta += total;
+          const state = delta === 0 ? 'is-active'
+            : delta === -1 ? 'is-before-1'
+              : delta === -2 ? 'is-before-2'
+                : delta === 1 ? 'is-after-1'
+                  : delta === 2 ? 'is-after-2'
+                    : 'is-far';
+          card.classList.remove(...states);
+          card.classList.add(state);
+          const visible = Math.abs(delta) <= 2;
+          card.tabIndex = visible ? 0 : -1;
+          card.setAttribute('aria-hidden', visible ? 'false' : 'true');
+          card.setAttribute('aria-pressed', delta === 0 ? 'true' : 'false');
+          card.setAttribute('aria-label', `${delta === 0 ? 'Open' : 'Bring forward'} concept ${i + 1}`);
+          card.dataset.cursorView = delta === 0 ? 'View' : 'Focus';
+        });
+      };
+
+      const stopAiAuto = () => {
+        window.clearInterval(autoTimer);
+        autoTimer = 0;
+      };
+
+      const startAiAuto = () => {
+        stopAiAuto();
+        if (REDUCED || !inView || hoverPaused || focusPaused || document.hidden) return;
+        autoTimer = window.setInterval(() => renderAiFlow(active + 1), AUTO_DELAY);
+      };
+
+      const restartAiAutoSoon = () => {
+        stopAiAuto();
+        window.clearTimeout(resumeTimer);
+        resumeTimer = window.setTimeout(startAiAuto, MANUAL_PAUSE);
+      };
+
+      const stepAiFlow = direction => {
+        SFX.flip();
+        renderAiFlow(active + direction);
+        restartAiAutoSoon();
+      };
+
+      aiFlow.addEventListener('click', e => {
+        const card = e.target.closest('[data-ai-card]');
+        if (!card) return;
+        const index = Number(card.dataset.aiIndex);
+        if (index === active) {
+          stopAiAuto();
+          openLb(card.dataset.aiCard);
+        } else {
+          SFX.flip();
+          renderAiFlow(index);
+          restartAiAutoSoon();
+        }
+      });
+      aiFlow.addEventListener('keydown', e => {
+        if (e.key === 'ArrowLeft') { e.preventDefault(); stepAiFlow(-1); }
+        else if (e.key === 'ArrowRight') { e.preventDefault(); stepAiFlow(1); }
+      });
+
+      // Precision touchpads report horizontal gestures as wheel deltaX. Accumulate
+      // small deltas, advance once per gesture, and keep normal vertical scrolling.
+      aiFlow.addEventListener('wheel', e => {
+        if (Math.abs(e.deltaX) <= Math.abs(e.deltaY) * 1.1) return;
+        e.preventDefault();
+        wheelDelta += e.deltaX;
+        const now = performance.now();
+        if (Math.abs(wheelDelta) >= 42 && now - lastWheelStep > 420) {
+          stepAiFlow(wheelDelta > 0 ? 1 : -1);
+          wheelDelta = 0;
+          lastWheelStep = now;
+        }
+      }, { passive: false });
+
+      aiFlow.addEventListener('touchstart', e => {
+        const touch = e.changedTouches[0];
+        touchStartX = touch.clientX;
+        touchStartY = touch.clientY;
+        stopAiAuto();
+      }, { passive: true });
+
+      aiFlow.addEventListener('touchend', e => {
+        const touch = e.changedTouches[0];
+        const deltaX = touch.clientX - touchStartX;
+        const deltaY = touch.clientY - touchStartY;
+        if (Math.abs(deltaX) >= 44 && Math.abs(deltaX) > Math.abs(deltaY) * 1.15) {
+          stepAiFlow(deltaX < 0 ? 1 : -1);
+        } else {
+          restartAiAutoSoon();
+        }
+      });
+
+      if (window.matchMedia('(hover: hover)').matches) {
+        aiFlow.addEventListener('mouseenter', () => { hoverPaused = true; stopAiAuto(); });
+        aiFlow.addEventListener('mouseleave', () => { hoverPaused = false; startAiAuto(); });
+      }
+
+      aiFlow.addEventListener('focusin', () => { focusPaused = true; stopAiAuto(); });
+      aiFlow.addEventListener('focusout', e => {
+        if (aiFlow.contains(e.relatedTarget)) return;
+        focusPaused = false;
+        startAiAuto();
+      });
+
+      document.addEventListener('visibilitychange', () => {
+        if (document.hidden) stopAiAuto();
+        else startAiAuto();
+      });
+
+      document.addEventListener('click', e => {
+        if (e.target.closest('[data-lb-close]')) restartAiAutoSoon();
+      });
+
+      const aiVisibility = new IntersectionObserver(([entry]) => {
+        inView = entry.isIntersecting && entry.intersectionRatio >= 0.25;
+        if (inView) startAiAuto();
+        else stopAiAuto();
+      }, { threshold: [0, 0.25, 0.6] });
+      aiVisibility.observe(aiFlow);
+      renderAiFlow(active);
+    }
+
+    // Reference-inspired overlapping editorial slider for flyers and posters.
+    const flyerSlider = railsWrap.querySelector('[data-flyer-slider]');
+    if (flyerSlider) {
+      const flyerStage = flyerSlider.querySelector('[data-flyer-stage]');
+      const flyerCards = [...flyerSlider.querySelectorAll('[data-flyer-card]')];
+      const flyerControls = [...flyerSlider.querySelectorAll('[data-flyer-go]')];
+      const flyerProgress = flyerSlider.querySelector('[data-flyer-progress]');
+      const flyerActiveLabel = flyerSlider.querySelector('[data-flyer-active-label]');
+      const flyerItems = GAL.items.filter(it => it.cat === 'flyers');
+      const flyerTotal = flyerCards.length;
+      let flyerActive = Math.min(1, flyerTotal - 1);
+      let flyerStartX = 0, flyerStartY = 0, flyerDragged = false;
+      let flyerWheel = 0, flyerWheelAt = 0;
+
+      const flyerRender = next => {
+        flyerActive = (next + flyerTotal) % flyerTotal;
+        flyerCards.forEach((card, index) => {
+          let position = (index - flyerActive + flyerTotal) % flyerTotal;
+          if (position > flyerTotal / 2) position -= flyerTotal;
+          if (position === flyerTotal / 2) position = -position;
+          position = Math.max(-3, Math.min(2, position));
+          const isActive = position === 0;
+          card.dataset.position = String(position);
+          card.setAttribute('aria-pressed', String(isActive));
+          card.tabIndex = Math.abs(position) <= 1 ? 0 : -1;
+          card.setAttribute('aria-label', `${isActive ? 'Open' : 'Select'} ${flyerItems[index].title}`);
+          if (isActive) {
+            card.dataset.galOpen = card.dataset.flyerId;
+            card.dataset.cursorView = 'View';
+          } else {
+            delete card.dataset.galOpen;
+            delete card.dataset.cursorView;
+          }
+        });
+        flyerControls.forEach((control, index) => {
+          const selected = index === flyerActive;
+          control.classList.toggle('is-active', selected);
+          if (selected) control.setAttribute('aria-current', 'true');
+          else control.removeAttribute('aria-current');
+        });
+        flyerProgress.style.transform = `scaleX(${(flyerActive + 1) / flyerTotal})`;
+        flyerActiveLabel.textContent = flyerItems[flyerActive].title;
+      };
+      const flyerStep = direction => { SFX.flip(); flyerRender(flyerActive + direction); };
+
+      flyerSlider.addEventListener('click', e => {
+        if (flyerDragged) {
+          flyerDragged = false;
+          e.preventDefault();
+          e.stopPropagation();
+          return;
+        }
+        const control = e.target.closest('[data-flyer-go]');
+        if (control) {
+          SFX.flip();
+          flyerRender(Number(control.dataset.flyerGo));
+          return;
+        }
+        const card = e.target.closest('[data-flyer-card]');
+        if (!card) return;
+        const index = Number(card.dataset.flyerCard);
+        if (index !== flyerActive) {
+          e.preventDefault();
+          SFX.flip();
+          flyerRender(index);
+        }
+      });
+      flyerStage.addEventListener('keydown', e => {
+        if (e.key === 'ArrowLeft') { e.preventDefault(); flyerStep(-1); }
+        else if (e.key === 'ArrowRight') { e.preventDefault(); flyerStep(1); }
+        else if (e.key === 'Home') { e.preventDefault(); flyerRender(0); }
+        else if (e.key === 'End') { e.preventDefault(); flyerRender(flyerTotal - 1); }
+      });
+      flyerStage.addEventListener('wheel', e => {
+        if (Math.abs(e.deltaX) <= Math.abs(e.deltaY) * 1.1) return;
+        e.preventDefault();
+        flyerWheel += e.deltaX;
+        const now = performance.now();
+        if (Math.abs(flyerWheel) >= 38 && now - flyerWheelAt > 360) {
+          flyerStep(flyerWheel > 0 ? 1 : -1);
+          flyerWheel = 0;
+          flyerWheelAt = now;
+        }
+      }, { passive: false });
+      flyerStage.addEventListener('pointerdown', e => {
+        if (!e.isPrimary) return;
+        flyerStartX = e.clientX;
+        flyerStartY = e.clientY;
+        flyerDragged = false;
+      }, { passive: true });
+      flyerStage.addEventListener('pointerup', e => {
+        if (!e.isPrimary) return;
+        const deltaX = e.clientX - flyerStartX;
+        const deltaY = e.clientY - flyerStartY;
+        if (Math.abs(deltaX) >= 44 && Math.abs(deltaX) > Math.abs(deltaY) * 1.15) {
+          flyerDragged = true;
+          flyerStep(deltaX < 0 ? 1 : -1);
+        }
+      }, { passive: true });
+      flyerStage.addEventListener('pointercancel', () => { flyerDragged = false; }, { passive: true });
+      flyerRender(flyerActive);
+    }
+
+    // Spatial dossier for the two property and interiors brand systems.
+    const interiorShowcase = railsWrap.querySelector('[data-interior-showcase]');
+    if (interiorShowcase) {
+      const interiorStage = interiorShowcase.querySelector('[data-interior-stage]');
+      const interiorCards = [...interiorShowcase.querySelectorAll('[data-interior-card]')];
+      const interiorThumbs = [...interiorShowcase.querySelectorAll('[data-interior-go]')];
+      const interiorTabs = [...interiorShowcase.querySelectorAll('[data-interior-tab]')];
+      const interiorThumbStrip = interiorShowcase.querySelector('[data-interior-thumbs]');
+      const interiorProgress = interiorShowcase.querySelector('[data-interior-progress]');
+      const interiorBrand = interiorShowcase.querySelector('[data-interior-brand]');
+      const interiorCopy = interiorShowcase.querySelector('[data-interior-copy]');
+      const interiorLocation = interiorShowcase.querySelector('[data-interior-location]');
+      const interiorDiscipline = interiorShowcase.querySelector('[data-interior-discipline]');
+      const interiorCount = interiorShowcase.querySelector('[data-interior-count]');
+      const interiorCurrent = interiorShowcase.querySelector('[data-interior-current]');
+      const interiorTotal = interiorShowcase.querySelector('[data-interior-total]');
+      const interiorSeriesLabel = interiorShowcase.querySelector('[data-interior-series-label]');
+      const interiorActiveTitle = interiorShowcase.querySelector('[data-interior-active-title]');
+      const interiorItems = GAL.items.filter(it => it.cat === 'interior');
+      const interiorSeries = {
+        araya: {
+          name: 'Araya Estates', location: 'Noida · Uttarakhand', discipline: 'Property campaigns',
+          copy: 'High-ticket listings shaped with a quieter, hospitality-led visual language.',
+          items: interiorItems.filter(it => it.title.toLowerCase().startsWith('aaraya'))
+        },
+        kosha: {
+          name: 'Kosha Spaces', location: 'Dubai · Residential', discipline: 'Interior storytelling',
+          copy: 'Editorial social systems designed to feel as considered as the spaces themselves.',
+          items: interiorItems.filter(it => !it.title.toLowerCase().startsWith('aaraya'))
+        }
+      };
+      const interiorSeriesKeys = Object.keys(interiorSeries).filter(key => interiorSeries[key].items.length);
+      const interiorActiveBySeries = Object.fromEntries(interiorSeriesKeys.map(key => [key, 0]));
+      let interiorSeriesKey = interiorSeriesKeys[0];
+      let interiorStartX = 0, interiorStartY = 0, interiorDragged = false;
+      let interiorWheel = 0, interiorWheelAt = 0;
+
+      const renderInterior = (next, shouldScroll = false) => {
+        const group = interiorSeries[interiorSeriesKey];
+        const total = group.items.length;
+        const active = (next + total) % total;
+        interiorActiveBySeries[interiorSeriesKey] = active;
+
+        interiorCards.forEach(card => {
+          const inSeries = card.dataset.interiorSeries === interiorSeriesKey;
+          card.hidden = !inSeries;
+          if (!inSeries) {
+            card.tabIndex = -1;
+            card.removeAttribute('data-position');
+            delete card.dataset.galOpen;
+            delete card.dataset.cursorView;
+            return;
+          }
+          const index = Number(card.dataset.interiorCard);
+          let position = index - active;
+          if (position > total / 2) position -= total;
+          if (position < -total / 2) position += total;
+          const isActive = position === 0;
+          card.dataset.position = String(Math.max(-2, Math.min(2, position)));
+          card.tabIndex = Math.abs(position) <= 1 ? 0 : -1;
+          card.setAttribute('aria-hidden', Math.abs(position) <= 1 ? 'false' : 'true');
+          card.setAttribute('aria-pressed', String(isActive));
+          card.setAttribute('aria-label', `${isActive ? 'Open' : 'Bring forward'} ${group.items[index].title}`);
+          if (isActive) {
+            card.dataset.galOpen = card.dataset.interiorId;
+            card.dataset.cursorView = 'View';
+          } else {
+            delete card.dataset.galOpen;
+            delete card.dataset.cursorView;
+          }
+        });
+
+        let selectedThumb = null;
+        interiorThumbs.forEach(thumb => {
+          const inSeries = thumb.dataset.interiorSeries === interiorSeriesKey;
+          const selected = inSeries && Number(thumb.dataset.interiorGo) === active;
+          thumb.hidden = !inSeries;
+          thumb.classList.toggle('is-active', selected);
+          if (selected) {
+            thumb.setAttribute('aria-current', 'true');
+            selectedThumb = thumb;
+          } else thumb.removeAttribute('aria-current');
+        });
+
+        interiorTabs.forEach(tab => {
+          const selected = tab.dataset.interiorTab === interiorSeriesKey;
+          tab.setAttribute('aria-selected', String(selected));
+          tab.tabIndex = selected ? 0 : -1;
+        });
+
+        const seriesNumber = interiorSeriesKeys.indexOf(interiorSeriesKey) + 1;
+        interiorSeriesLabel.textContent = `Series ${String(seriesNumber).padStart(2, '0')} / ${String(interiorSeriesKeys.length).padStart(2, '0')}`;
+        interiorBrand.textContent = group.name;
+        interiorCopy.textContent = group.copy;
+        interiorLocation.textContent = group.location;
+        interiorDiscipline.textContent = group.discipline;
+        interiorCount.textContent = String(total).padStart(2, '0');
+        interiorCurrent.textContent = String(active + 1).padStart(2, '0');
+        interiorTotal.textContent = String(total).padStart(2, '0');
+        interiorActiveTitle.textContent = group.items[active].title;
+        interiorProgress.style.transform = `scaleX(${(active + 1) / total})`;
+        if (shouldScroll && selectedThumb) {
+          interiorThumbStrip.scrollTo({
+            left: selectedThumb.offsetLeft - (interiorThumbStrip.clientWidth - selectedThumb.offsetWidth) / 2,
+            behavior: REDUCED ? 'auto' : 'smooth'
+          });
+        }
+      };
+
+      const stepInterior = direction => {
+        SFX.flip();
+        renderInterior(interiorActiveBySeries[interiorSeriesKey] + direction, true);
+      };
+
+      interiorShowcase.addEventListener('click', e => {
+        if (interiorDragged) {
+          interiorDragged = false;
+          e.preventDefault();
+          e.stopPropagation();
+          return;
+        }
+        const tab = e.target.closest('[data-interior-tab]');
+        if (tab) {
+          interiorSeriesKey = tab.dataset.interiorTab;
+          SFX.flip();
+          renderInterior(interiorActiveBySeries[interiorSeriesKey], true);
+          return;
+        }
+        const thumb = e.target.closest('[data-interior-go]');
+        if (thumb && thumb.dataset.interiorSeries === interiorSeriesKey) {
+          SFX.flip();
+          renderInterior(Number(thumb.dataset.interiorGo), true);
+          return;
+        }
+        if (e.target.closest('[data-interior-prev]')) { stepInterior(-1); return; }
+        if (e.target.closest('[data-interior-next]')) { stepInterior(1); return; }
+        const card = e.target.closest('[data-interior-card]');
+        if (!card || card.dataset.interiorSeries !== interiorSeriesKey) return;
+        const index = Number(card.dataset.interiorCard);
+        if (index !== interiorActiveBySeries[interiorSeriesKey]) {
+          e.preventDefault();
+          e.stopPropagation();
+          SFX.flip();
+          renderInterior(index, true);
+        }
+      });
+
+      interiorStage.addEventListener('keydown', e => {
+        if (e.key === 'ArrowLeft') { e.preventDefault(); stepInterior(-1); }
+        else if (e.key === 'ArrowRight') { e.preventDefault(); stepInterior(1); }
+        else if (e.key === 'Home') { e.preventDefault(); renderInterior(0, true); }
+        else if (e.key === 'End') { e.preventDefault(); renderInterior(interiorSeries[interiorSeriesKey].items.length - 1, true); }
+      });
+
+      interiorStage.addEventListener('wheel', e => {
+        if (Math.abs(e.deltaX) <= Math.abs(e.deltaY) * 1.1) return;
+        e.preventDefault();
+        interiorWheel += e.deltaX;
+        const now = performance.now();
+        if (Math.abs(interiorWheel) >= 38 && now - interiorWheelAt > 360) {
+          stepInterior(interiorWheel > 0 ? 1 : -1);
+          interiorWheel = 0;
+          interiorWheelAt = now;
+        }
+      }, { passive: false });
+
+      interiorStage.addEventListener('pointerdown', e => {
+        if (!e.isPrimary) return;
+        interiorStartX = e.clientX;
+        interiorStartY = e.clientY;
+        interiorDragged = false;
+      }, { passive: true });
+      interiorStage.addEventListener('pointerup', e => {
+        if (!e.isPrimary) return;
+        const deltaX = e.clientX - interiorStartX;
+        const deltaY = e.clientY - interiorStartY;
+        if (Math.abs(deltaX) >= 44 && Math.abs(deltaX) > Math.abs(deltaY) * 1.15) {
+          interiorDragged = true;
+          stepInterior(deltaX < 0 ? 1 : -1);
+        }
+      }, { passive: true });
+      interiorStage.addEventListener('pointercancel', () => { interiorDragged = false; }, { passive: true });
+
+      renderInterior(0);
+    }
 
     // arrow buttons page the rail
     railsWrap.addEventListener('click', e => {
@@ -1096,6 +1917,7 @@
     // silent jump by an exact set-width lands on identical pixels, so the
     // rail can scroll forever in either direction
     const tracks = [...railsWrap.querySelectorAll('[data-rail-track]')];
+    const loopTracks = tracks.filter(track => track.closest('.rail--thumbnails, .rail--banners'));
     const loopState = new Map();
     const setupRailLoop = track => {
       let st = loopState.get(track);
@@ -1133,7 +1955,9 @@
       track.scrollLeft += delta;
       if (dragTrack === track) dragStartLeft += delta; // keep an active drag anchored
     };
-    tracks.forEach(track => {
+    // Infinite copies are only necessary for the two autoplay rails. Keeping
+    // manual shelves finite removes hundreds of duplicate cards and images.
+    loopTracks.forEach(track => {
       setupRailLoop(track);
       recenterRail(track, true);
       track.addEventListener('scroll', () => recenterRail(track), { passive: true });
@@ -1147,6 +1971,8 @@
       track.addEventListener('scroll', () => {
         const d = Math.abs(track.scrollLeft - railLastSL.get(track));
         railLastSL.set(track, track.scrollLeft);
+        // Keep continuous rail autoplay silent; manual movement still ticks.
+        if (track.dataset.autoScrolling === 'true') return;
         if (d > 400) return; // seamless loop-wrap jump, not real movement
         railTickAcc += d;
         const now = performance.now();
@@ -1158,14 +1984,110 @@
       }, { passive: true });
     });
     window.addEventListener('resize', () => {
-      tracks.forEach(t => { setupRailLoop(t); recenterRail(t, true); });
+      loopTracks.forEach(t => { setupRailLoop(t); recenterRail(t, true); });
     }, { passive: true });
+
+    // Continuous, seamless rails for the YouTube reel and website-banner lab.
+    // Pointer/touch/wheel input takes priority, then autoplay resumes promptly.
+    const setupContinuousRailAuto = (railSelector, speed) => {
+      const autoRail = railsWrap.querySelector(railSelector);
+      const autoTrack = autoRail && autoRail.querySelector('[data-rail-track]');
+      if (!autoTrack || REDUCED) return;
+      let autoRaf = null, autoLast = 0, autoInView = false, autoInteracting = false;
+      let autoResumeTimer = null;
+      let autoPosition = autoTrack.scrollLeft;
+
+      const markAuto = value => { autoTrack.dataset.autoScrolling = value ? 'true' : 'false'; };
+      const autoFrame = now => {
+        if (!autoInView || doc.hidden) {
+          autoRaf = null; autoLast = 0; markAuto(false); return;
+        }
+        if (!autoLast) autoLast = now;
+        const delta = Math.min(now - autoLast, 64);
+        autoLast = now;
+        if (!autoInteracting) {
+          markAuto(true);
+          const actual = autoTrack.scrollLeft;
+          // Preserve sub-pixel movement between frames, but resync after an
+          // infinite-loop jump or a manual scroll changes the real position.
+          if (Math.abs(actual - autoPosition) > 64) autoPosition = actual;
+          autoPosition += speed * delta / 1000;
+          autoTrack.scrollLeft = autoPosition;
+        } else {
+          markAuto(false);
+        }
+        autoRaf = requestAnimationFrame(autoFrame);
+      };
+      const startThumbnailAuto = () => {
+        if (!autoInView || doc.hidden || autoRaf) return;
+        autoLast = 0;
+        autoPosition = autoTrack.scrollLeft;
+        autoRaf = requestAnimationFrame(autoFrame);
+      };
+      const stopThumbnailAuto = () => {
+        if (autoRaf) cancelAnimationFrame(autoRaf);
+        autoRaf = null; autoLast = 0; markAuto(false);
+      };
+      const setThumbnailInteraction = active => {
+        autoInteracting = active;
+        markAuto(false);
+        if (!active) {
+          autoPosition = autoTrack.scrollLeft;
+          startThumbnailAuto();
+        }
+      };
+      const resumeThumbnailSoon = delay => {
+        clearTimeout(autoResumeTimer);
+        setThumbnailInteraction(true);
+        autoResumeTimer = setTimeout(() => setThumbnailInteraction(false), delay);
+      };
+
+      autoTrack.addEventListener('pointerdown', () => {
+        clearTimeout(autoResumeTimer);
+        setThumbnailInteraction(true);
+      }, { passive: true });
+      window.addEventListener('pointerup', () => {
+        if (autoInteracting) setThumbnailInteraction(false);
+      }, { passive: true });
+      window.addEventListener('pointercancel', () => {
+        if (autoInteracting) setThumbnailInteraction(false);
+      }, { passive: true });
+      autoTrack.addEventListener('wheel', () => resumeThumbnailSoon(180), { passive: true });
+      autoRail.addEventListener('click', e => {
+        if (e.target.closest('[data-rail-prev], [data-rail-next]')) resumeThumbnailSoon(650);
+      });
+
+      let visibilityRaf = null;
+      const syncAutoVisibility = () => {
+        visibilityRaf = null;
+        const rect = autoRail.getBoundingClientRect();
+        const nextInView = rect.bottom > 0 && rect.top < window.innerHeight;
+        if (nextInView === autoInView) return;
+        autoInView = nextInView;
+        if (autoInView) startThumbnailAuto();
+        else stopThumbnailAuto();
+      };
+      const scheduleAutoVisibility = () => {
+        if (!visibilityRaf) visibilityRaf = requestAnimationFrame(syncAutoVisibility);
+      };
+      window.addEventListener('scroll', scheduleAutoVisibility, { passive: true });
+      window.addEventListener('resize', scheduleAutoVisibility, { passive: true });
+      scheduleAutoVisibility();
+      doc.addEventListener('visibilitychange', () => {
+        if (doc.hidden) stopThumbnailAuto();
+        else startThumbnailAuto();
+      });
+    };
+    setupContinuousRailAuto('.rail--thumbnails', 24);
+    setupContinuousRailAuto('.rail--banners', 24);
 
     // VK-fest style 3D coverflow — cards curve around the viewer, driven by
     // each rail's scroll position (center card flat & near, edges rotate away)
     if (!REDUCED) {
       const MAX_ANGLE = 34, NEAR_Z = 30, FAR_Z = -70;
+      const coverflowTracks = tracks.filter(track => !track.closest('.rail--festivals, .rail--thumbnails, .rail--banners'));
       const updateTrack = track => {
+        const isSocial = Boolean(track.closest('.rail--social'));
         const cw = track.clientWidth;
         const mid = cw / 2;
         const sl = track.scrollLeft;
@@ -1179,8 +2101,15 @@
           if (c < lo || c > hi) continue;
           const card = kids[i];
           const n = Math.max(-1, Math.min(1, (c - sl - mid) / mid));
-          const z = NEAR_Z + (FAR_Z - NEAR_Z) * Math.abs(n);
-          const tf = `translateZ(${z.toFixed(1)}px) rotateY(${(n * MAX_ANGLE).toFixed(2)}deg)`;
+          const distance = Math.abs(n);
+          const maxAngle = isSocial ? 42 : MAX_ANGLE;
+          const nearZ = isSocial ? 58 : NEAR_Z;
+          const farZ = isSocial ? -118 : FAR_Z;
+          const z = nearZ + (farZ - nearZ) * distance;
+          const arcY = isSocial ? Math.pow(distance, 1.35) * 24 : 0;
+          const scale = isSocial ? 1 - distance * 0.065 : 1;
+          const tf = `translateY(${arcY.toFixed(1)}px) translateZ(${z.toFixed(1)}px) rotateY(${(n * maxAngle).toFixed(2)}deg) scale(${scale.toFixed(3)})`;
+          if (isSocial) card.style.zIndex = String(100 - Math.round(distance * 60));
           if (card.style.transform !== tf) card.style.transform = tf;
         }
       };
@@ -1188,12 +2117,12 @@
       let coverflowRaf = null;
       const flushCoverflow = () => { queued.forEach(updateTrack); queued.clear(); coverflowRaf = null; };
       const scheduleCoverflow = t => { queued.add(t); if (!coverflowRaf) coverflowRaf = requestAnimationFrame(flushCoverflow); };
-      tracks.forEach(t => {
+      coverflowTracks.forEach(t => {
         t.addEventListener('scroll', () => scheduleCoverflow(t), { passive: true });
         scheduleCoverflow(t);
       });
-      window.addEventListener('resize', () => tracks.forEach(scheduleCoverflow), { passive: true });
-      window.addEventListener('load', () => tracks.forEach(scheduleCoverflow), { once: true });
+      window.addEventListener('resize', () => coverflowTracks.forEach(scheduleCoverflow), { passive: true });
+      window.addEventListener('load', () => coverflowTracks.forEach(scheduleCoverflow), { once: true });
     }
 
     // cursor tilt rides on the inner media so it composes with the coverflow
@@ -1215,6 +2144,39 @@
         if (tiltMedia) { untilt(tiltMedia); tiltMedia = null; }
       });
     }
+    requestAnimationFrame(() => ScrollTrigger.refresh());
+  };
+
+  const warmGalleryThumbs = () => {
+    const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+    if (connection && (connection.saveData || /(^|-)2g$/.test(connection.effectiveType || ''))) return;
+    const urls = [];
+    const categoryRows = GAL.categories.map(([key]) => GAL.items.filter(it => it.cat === key).slice(0, 8));
+    // Round-robin keeps the first visible artwork of every section near the
+    // front of the queue instead of finishing one category before the next.
+    for (let row = 0; row < 8; row++) {
+      categoryRows.forEach(items => {
+        const it = items[row];
+        if (!it) return;
+        urls.push((it.thumb || it.cover)[0]);
+        (it.previews || []).forEach(preview => urls.push(preview[0]));
+      });
+    }
+    const queue = [...new Set(urls)];
+    let cursor = 0;
+    const pump = () => {
+      const batch = queue.slice(cursor, cursor + 8);
+      cursor += batch.length;
+      if (!batch.length) return;
+      Promise.allSettled(batch.map(src => fetch(encodeURI(src), { cache: 'force-cache' })))
+        .finally(() => setTimeout(pump, 60));
+    };
+    setTimeout(pump, 240);
+  };
+
+  if (railsWrap && GAL.items.length) {
+    const schedule = window.requestIdleCallback || (cb => setTimeout(cb, 0));
+    schedule(() => { initGallery(); warmGalleryThumbs(); }, { timeout: 240 });
   }
 
   /* Lightbox — flat list of every page of every item in the current filter */
@@ -1265,6 +2227,7 @@
   };
 
   const openLb = id => {
+    initGallery();
     lbBuildFlat();
     const at = lbFlat.findIndex(en => en.id === id);
     if (at < 0) return;
@@ -1274,6 +2237,7 @@
     lbPrevBtn.hidden = single;
     lbNextBtn.hidden = single;
     lbRoot.classList.add('is-open');
+    lbRoot.inert = false;
     lbRoot.setAttribute('aria-hidden', 'false');
     header.inert = true;
     setBackgroundInert(true);
@@ -1286,6 +2250,7 @@
     if (!lbRoot.classList.contains('is-open')) return;
     SFX.close();
     lbRoot.classList.remove('is-open');
+    lbRoot.inert = true;
     lbRoot.setAttribute('aria-hidden', 'true');
     lbImg.removeAttribute('src');
     header.inert = false;
@@ -1370,23 +2335,7 @@
 
   const initScrollFX = () => {
     if (REDUCED) return;
-
-    ScrollTrigger.batch('[data-reveal]', {
-      start: 'top 88%',
-      once: true,
-      onEnter: els => gsap.to(els, {
-        opacity: 1, y: 0, duration: 0.9, stagger: 0.09, ease: 'power3.out', overwrite: true
-      })
-    });
-
-    splitTargets.forEach(el => {
-      gsap.fromTo(el.querySelectorAll('.swi'),
-        { yPercent: 115 },
-        {
-          yPercent: 0, duration: 0.9, stagger: 0.05, ease: 'power4.out',
-          scrollTrigger: { trigger: el, start: 'top 86%', once: true }
-        });
-    });
+    root.classList.add('scrollfx-ready');
 
     statNums.forEach(el => {
       const target = +el.dataset.count;
@@ -1407,10 +2356,6 @@
       });
     }
 
-    gsap.to('.s-hero__canvas', {
-      opacity: 0.25, ease: 'none',
-      scrollTrigger: { trigger: '.s-hero', start: '40% top', end: 'bottom top', scrub: true }
-    });
   };
 
   /* ---------------- Active nav link ---------------- */
@@ -1448,35 +2393,35 @@
       .fromTo('[data-hero-meta] > *', { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 0.7, stagger: 0.08 }, 0.5)
       .fromTo('[data-hero-sub]', { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.8 }, 0.65)
       .fromTo('[data-hero-cta] > *', { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.7, stagger: 0.09 }, 0.75)
-      .fromTo('[data-hero-bottom]', { opacity: 0 }, { opacity: 1, duration: 0.9, onComplete: initScrollFX }, 0.9)
-      .fromTo(heroCanvas, { opacity: 0 }, { opacity: 1, duration: 1.6, ease: 'power1.out' }, 0.4);
+      .fromTo('[data-hero-bottom]', { opacity: 0 }, { opacity: 1, duration: 0.9, onComplete: initScrollFX }, 0.9);
   };
 
   const runPreloader = () => {
-    if (REDUCED || !preloader) {
+    if (REDUCED || !preloader || session.get('ng-intro-seen') === '1') {
       preloader && preloader.remove();
       heroIntro();
       return;
     }
+    session.set('ng-intro-seen', '1');
     lockScroll(true);
     const count = doc.querySelector('[data-preloader-count]');
     const bar = doc.querySelector('[data-preloader-bar]');
     const letters = doc.querySelectorAll('[data-preloader-word] span');
     const state = { v: 0 };
-    const minTime = new Promise(res => setTimeout(res, 1700));
+    const minTime = new Promise(res => setTimeout(res, 420));
     // window load can take 30s+ with a 583-image gallery; never hold the
     // door longer than 3.5s — lazy images keep loading behind the intro
     const loaded = Promise.race([
       new Promise(res => {
-        if (doc.readyState === 'complete') res();
-        else window.addEventListener('load', res, { once: true });
+        if (doc.readyState !== 'loading') res();
+        else doc.addEventListener('DOMContentLoaded', res, { once: true });
       }),
-      new Promise(res => setTimeout(res, 3500))
+      new Promise(res => setTimeout(res, 900))
     ]);
 
     gsap.fromTo(letters, { yPercent: 120 }, { yPercent: 0, duration: 0.85, stagger: 0.055, ease: 'power4.out' });
     gsap.to(state, {
-      v: 100, duration: 1.7, ease: 'power2.inOut',
+      v: 100, duration: 0.52, ease: 'power2.inOut',
       onUpdate: () => {
         count.textContent = String(Math.round(state.v)).padStart(2, '0');
         bar.style.transform = `scaleX(${state.v / 100})`;
@@ -1490,14 +2435,14 @@
       const out = gsap.timeline({
         onComplete: () => preloader.remove()
       });
-      out.to(letters, { yPercent: -120, duration: 0.6, stagger: 0.035, ease: 'power3.in' })
-        .to('.preloader__meta, .preloader__bar', { opacity: 0, duration: 0.3 }, '<0.2')
-        .to(preloader, { clipPath: 'inset(0 0 100% 0)', duration: 0.85, ease: 'power4.inOut' }, '-=0.15')
+      out.to(letters, { yPercent: -120, duration: 0.32, stagger: 0.018, ease: 'power3.in' })
+        .to('.preloader__meta, .preloader__bar', { opacity: 0, duration: 0.18 }, '<0.08')
+        .to(preloader, { clipPath: 'inset(0 0 100% 0)', duration: 0.48, ease: 'power4.inOut' }, '-=0.1')
         // unlock the moment the wipe starts, not after it ends — while Lenis
         // is stopped every wheel/touchpad event is swallowed, which read as
         // seconds of dead scroll input right after load
         .add(() => lockScroll(false), '<')
-        .add(startIntro, '-=0.55');
+        .add(startIntro, '-=0.34');
     });
 
     // last-resort: GSAP's ticker sleeps in hidden tabs, so if the exit
@@ -1509,7 +2454,7 @@
         lockScroll(false);
         startIntro();
       }
-    }, 9000);
+    }, 3000);
   };
   runPreloader();
 })();

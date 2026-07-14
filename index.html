@@ -22,7 +22,7 @@
   <link rel="preload" href="assets/fonts/archivo-var.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="assets/fonts/fraunces-var-italic.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="assets/fonts/space-mono.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/styles.css?v=20260714-14">
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
@@ -105,7 +105,7 @@
   </header>
 
   <!-- Mobile menu -->
-  <div class="menu" id="mobile-menu" data-menu aria-hidden="true">
+  <div class="menu" id="mobile-menu" data-menu aria-hidden="true" inert>
     <nav class="menu__nav" aria-label="Mobile">
       <a href="#about" data-menu-link><span class="menu__index">01</span>About</a>
       <a href="#work" data-menu-link><span class="menu__index">02</span>Work</a>
@@ -133,7 +133,6 @@
 
     <!-- ================= HERO ================= -->
     <section class="s-hero" id="top" data-hero>
-      <canvas class="s-hero__canvas" data-hero-canvas aria-hidden="true"></canvas>
       <div class="s-hero__inner container">
         <div class="s-hero__meta" data-hero-meta>
           <span class="chip"><i class="chip__dot"></i>Available for select projects</span>
@@ -160,7 +159,7 @@
           <span class="s-hero__line s-hero__line--three">
             <span class="s-hero__row" data-hero-line>
               <em class="s-hero__accent s-hero__pill s-hero__pill--serif" data-hero-accent>converts.</em>
-              <span class="s-hero__chip s-hero__chip--photo" aria-hidden="true"><img src="assets/MyPic.jpeg" alt="" width="200" height="200"></span>
+              <span class="s-hero__chip s-hero__chip--photo" aria-hidden="true"><img src="assets/MyPic.jpeg" alt="" width="200" height="200" decoding="async" fetchpriority="high"></span>
               <span class="s-hero__chip s-hero__chip--green" aria-hidden="true"><i></i></span>
               <svg class="s-hero__connector" viewBox="0 0 150 96" aria-hidden="true">
                 <circle cx="8" cy="10" r="6" fill="#f5b52a"/>
@@ -195,42 +194,64 @@
     <!-- ================= ABOUT ================= -->
     <section class="s-about section" id="about">
       <div class="container">
-        <div class="section-head" data-reveal>
-          <span class="mono-label section-head__index">01 — About</span>
-          <h2 class="section-head__title" data-split>
-            The designer growth teams <em>argue over.</em>
-          </h2>
+        <div class="section-head s-about__head" data-reveal>
+          <div>
+            <span class="mono-label section-head__index">01 — About</span>
+            <h2 class="section-head__title" data-split>
+              The designer growth teams <em>argue over.</em>
+            </h2>
+          </div>
+          <p class="s-about__head-note">Print discipline. Fintech pace. Performance accountability. Six years spent making visual systems work harder.</p>
         </div>
         <div class="s-about__grid">
-          <div class="s-about__portrait" data-reveal data-parallax-img>
+          <aside class="s-about__portrait" data-reveal data-parallax-img>
+            <div class="s-about__portrait-meta mono-label">
+              <span>Profile dossier</span><span>NG / 2026</span>
+            </div>
             <div class="s-about__portrait-frame">
               <img src="assets/work/about-visual.jpg" alt="Nishchay Gupta — editorial self-portrait from the ‘Taste is becoming the advantage’ series" loading="lazy" width="1000" height="1250">
+              <span class="s-about__portrait-corners" aria-hidden="true"></span>
+              <span class="s-about__portrait-folio mono-label" aria-hidden="true">01 / 01</span>
             </div>
             <span class="mono-label s-about__portrait-tag">Gurgaon, IN — 28.4595° N, 77.0266° E</span>
-          </div>
+            <div class="s-about__status">
+              <span class="mono-label"><i aria-hidden="true"></i>Currently</span>
+              <strong>Senior Graphic Designer</strong>
+              <small>Univest · Gurgaon</small>
+            </div>
+          </aside>
           <div class="s-about__body">
-            <p class="s-about__lead" data-reveal>
-              I started with book covers in Agra. 200+ of them, print-ready artwork across
-              100+ titles for one of India's leading educational publishers. I walked in
-              as an intern and was promoted twice before I left. Print teaches you one
-              thing fast: there is no version two after it ships.
-            </p>
-            <p data-reveal>
-              Now I'm the senior graphic designer at <strong>Univest</strong>, one of
-              India's fastest-growing investment platforms. 250+ performance creatives
-              across 40+ campaign concepts on Meta, Google, LinkedIn, Instagram and app
-              campaigns, plus the landing pages, emailers, push notifications and in-app
-              promos they lead into. Before that, a year at <strong>Payomatix</strong>
-              designing 35+ investor pitch decks and brand identities for 10+ fintech
-              products, for clients in payments, crypto, iGaming and banking worldwide.
-            </p>
-            <p data-reveal>
-              My degree is in mathematics, and it shows in how I work. I don't defend a
-              creative in a meeting; I ship it in A/B variants and let the numbers settle
-              it. Midjourney, Firefly and ChatGPT sit inside my process for faster
-              ideation at scale, but AI stays upstream of the work. It never gets the
-              final say on a frame.
-            </p>
+            <div class="s-about__chapter" data-reveal>
+              <div class="s-about__chapter-key"><span>01</span><small class="mono-label">Origin</small></div>
+              <p class="s-about__lead">
+                I started with book covers in Agra. 200+ of them, print-ready artwork across
+                100+ titles for one of India's leading educational publishers. I walked in
+                as an intern and was promoted twice before I left. Print teaches you one
+                thing fast: there is no version two after it ships.
+              </p>
+            </div>
+            <div class="s-about__chapter" data-reveal>
+              <div class="s-about__chapter-key"><span>02</span><small class="mono-label">Now</small></div>
+              <p>
+                Now I'm the senior graphic designer at <strong>Univest</strong>, one of
+                India's fastest-growing investment platforms. 250+ performance creatives
+                across 40+ campaign concepts on Meta, Google, LinkedIn, Instagram and app
+                campaigns, plus the landing pages, emailers, push notifications and in-app
+                promos they lead into. Before that, a year at <strong>Payomatix</strong>
+                designing 35+ investor pitch decks and brand identities for 10+ fintech
+                products, for clients in payments, crypto, iGaming and banking worldwide.
+              </p>
+            </div>
+            <div class="s-about__chapter" data-reveal>
+              <div class="s-about__chapter-key"><span>03</span><small class="mono-label">Method</small></div>
+              <p>
+                My degree is in mathematics, and it shows in how I work. I don't defend a
+                creative in a meeting; I ship it in A/B variants and let the numbers settle
+                it. Midjourney, Firefly and ChatGPT sit inside my process for faster
+                ideation at scale, but AI stays upstream of the work. It never gets the
+                final say on a frame.
+              </p>
+            </div>
             <ul class="s-about__facts" data-reveal>
               <li><span class="mono-label">Currently</span>Senior Graphic Designer, Univest</li>
               <li><span class="mono-label">Previously</span>Payomatix · Upkar Prakashan</li>
@@ -245,11 +266,13 @@
     <!-- ================= FEATURED ================= -->
     <section class="s-featured section" id="work">
       <div class="container">
-        <div class="section-head" data-reveal>
-          <span class="mono-label section-head__index">02 — Selected work</span>
-          <h2 class="section-head__title" data-split>
-            Work that had a <em>job to do.</em>
-          </h2>
+        <div class="section-head s-featured__head" data-reveal>
+          <div>
+            <span class="mono-label section-head__index">02 — Selected work</span>
+            <h2 class="section-head__title" data-split>
+              Work that had a <em>job to do.</em>
+            </h2>
+          </div>
           <p class="section-head__note">Good ads aren't pretty. They're clear. Every piece here shipped with a target on its back: installs, signups, sales.</p>
         </div>
         <div class="s-featured__list" data-featured-list>
@@ -552,20 +575,20 @@
   </footer>
 
   <!-- Case study overlay -->
-  <div class="case" data-case aria-hidden="true">
+  <div class="case" data-case aria-hidden="true" inert>
     <div class="case__backdrop" data-case-close></div>
     <div class="case__panel" role="dialog" aria-modal="true" aria-label="Case study">
       <button class="case__close" data-case-close aria-label="Close case study">
         <span>Close</span><i>✕</i>
       </button>
-      <div class="case__scroll" data-case-scroll data-lenis-prevent>
+      <div class="case__scroll" data-case-scroll>
         <div class="case__content" data-case-content><!-- injected --></div>
       </div>
     </div>
   </div>
 
   <!-- Archive lightbox -->
-  <div class="lb" data-lb aria-hidden="true">
+  <div class="lb" data-lb aria-hidden="true" inert>
     <div class="lb__backdrop" data-lb-close></div>
     <figure class="lb__stage" data-lb-stage>
       <img class="lb__img" data-lb-img alt="">
@@ -584,9 +607,8 @@
 
   <script src="js/vendor/gsap.min.js" defer></script>
   <script src="js/vendor/ScrollTrigger.min.js" defer></script>
-  <script src="js/vendor/lenis.min.js" defer></script>
   <script src="js/data.js" defer></script>
   <script src="js/gallery-data.js" defer></script>
-  <script src="js/main.js" defer></script>
+  <script src="js/main.js?v=20260714-14" defer></script>
 </body>
 </html>
