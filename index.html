@@ -22,7 +22,7 @@
   <link rel="preload" href="assets/fonts/archivo-var.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="assets/fonts/fraunces-var-italic.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="assets/fonts/space-mono.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="css/styles.css?v=20260714-14">
+  <link rel="stylesheet" href="css/styles.css?v=20260714-19">
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
@@ -306,31 +306,99 @@
             One brain, <em>full funnel.</em>
           </h2>
         </div>
-        <div class="s-services__list">
-          <article class="service" data-reveal>
-            <span class="service__index mono-label">S.01</span>
-            <h3 class="service__title">Performance Marketing Creatives</h3>
-            <p class="service__desc">Ads built for the scroll, not the shelf. I've shipped 250+ creatives for Meta, Google, LinkedIn, Instagram and app campaigns at Univest, in systematic A/B variations so the data picks the winner, not the loudest opinion in the room.</p>
-            <span class="service__tags mono-label">Paid social · A/B variants · App campaigns</span>
-          </article>
-          <article class="service" data-reveal>
-            <span class="service__index mono-label">S.02</span>
-            <h3 class="service__title">Pitch Deck Design</h3>
-            <p class="service__desc">A deck is a story with a number at the end. At Payomatix I designed 35+ investor pitch decks and sales presentations for fintech, crypto and banking clients worldwide. I design the story so the number lands.</p>
-            <span class="service__tags mono-label">Investor decks · Sales presentations · Visual storytelling</span>
-          </article>
-          <article class="service" data-reveal>
-            <span class="service__index mono-label">S.03</span>
-            <h3 class="service__title">Brand Identity &amp; Campaign Systems</h3>
-            <p class="service__desc">Identities that hold up after launch week. I built branding for 10+ fintech products at Payomatix, from a white label payment gateway to crypto infrastructure, each with a visual system tight enough that every asset after it stayed on brand.</p>
-            <span class="service__tags mono-label">Identity · Guidelines · Campaign systems</span>
-          </article>
-          <article class="service" data-reveal>
-            <span class="service__index mono-label">S.04</span>
-            <h3 class="service__title">Full-Funnel Digital Assets</h3>
-            <p class="service__desc">Landing pages, banners, emailers, push notifications and in-app promos, designed as one connected funnel. When the ad and everything after the click come from the same hands, the message doesn't fray on the way to the conversion.</p>
-            <span class="service__tags mono-label">Landing pages · Emailers · Push &amp; in-app</span>
-          </article>
+        <div class="services-console" data-services-console data-reveal>
+          <aside class="services-console__panel" aria-live="polite">
+            <span class="services-console__eyebrow mono-label">Active capability</span>
+            <span class="services-console__number" data-service-active-index aria-hidden="true">01</span>
+            <div class="services-console__copy">
+              <span class="mono-label" data-service-active-kicker>Acquisition systems</span>
+              <h3 data-service-active-title>Performance Marketing Creatives</h3>
+              <p data-service-active-outcome>Performance systems built to test, learn and scale.</p>
+            </div>
+            <dl class="services-console__facts">
+              <div><dt>Model</dt><dd>Senior-led</dd></div>
+              <div><dt>Coverage</dt><dd>End to end</dd></div>
+              <div><dt>Output</dt><dd>Built to ship</dd></div>
+            </dl>
+            <a class="services-console__cta" href="#contact">
+              <span>Start a project</span><i aria-hidden="true">↗</i>
+            </a>
+            <span class="services-console__orbit" aria-hidden="true"><i></i></span>
+          </aside>
+
+          <div class="s-services__list" role="list" aria-label="Design services">
+            <article class="service is-active" data-service data-service-kicker="Acquisition systems"
+              data-service-outcome="Performance systems built to test, learn and scale." role="listitem">
+              <button class="service__trigger" type="button" aria-expanded="true" aria-controls="service-panel-1">
+                <span class="service__index mono-label">S.01</span>
+                <span class="service__heading">
+                  <small class="mono-label">Acquisition systems</small>
+                  <span class="service__title">Performance Marketing Creatives</span>
+                </span>
+                <span class="service__toggle" aria-hidden="true"><i></i></span>
+              </button>
+              <div class="service__body" id="service-panel-1" aria-hidden="false">
+                <div class="service__body-clip"><div class="service__body-inner">
+                  <p class="service__desc">Ads built for the scroll, not the shelf. I've shipped 250+ creatives for Meta, Google, LinkedIn, Instagram and app campaigns at Univest, in systematic A/B variations so the data picks the winner, not the loudest opinion in the room.</p>
+                  <div class="service__tags" aria-label="Includes"><span>Paid social</span><span>A/B variants</span><span>App campaigns</span></div>
+                </div></div>
+              </div>
+            </article>
+
+            <article class="service" data-service data-service-kicker="Investor storytelling"
+              data-service-outcome="Narrative decks designed to make the number land." role="listitem">
+              <button class="service__trigger" type="button" aria-expanded="true" aria-controls="service-panel-2">
+                <span class="service__index mono-label">S.02</span>
+                <span class="service__heading">
+                  <small class="mono-label">Investor storytelling</small>
+                  <span class="service__title">Pitch Deck Design</span>
+                </span>
+                <span class="service__toggle" aria-hidden="true"><i></i></span>
+              </button>
+              <div class="service__body" id="service-panel-2" aria-hidden="false">
+                <div class="service__body-clip"><div class="service__body-inner">
+                  <p class="service__desc">A deck is a story with a number at the end. At Payomatix I designed 35+ investor pitch decks and sales presentations for fintech, crypto and banking clients worldwide. I design the story so the number lands.</p>
+                  <div class="service__tags" aria-label="Includes"><span>Investor decks</span><span>Sales presentations</span><span>Visual storytelling</span></div>
+                </div></div>
+              </div>
+            </article>
+
+            <article class="service" data-service data-service-kicker="Brand infrastructure"
+              data-service-outcome="Identity systems that stay coherent after launch." role="listitem">
+              <button class="service__trigger" type="button" aria-expanded="true" aria-controls="service-panel-3">
+                <span class="service__index mono-label">S.03</span>
+                <span class="service__heading">
+                  <small class="mono-label">Brand infrastructure</small>
+                  <span class="service__title">Brand Identity &amp; Campaign Systems</span>
+                </span>
+                <span class="service__toggle" aria-hidden="true"><i></i></span>
+              </button>
+              <div class="service__body" id="service-panel-3" aria-hidden="false">
+                <div class="service__body-clip"><div class="service__body-inner">
+                  <p class="service__desc">Identities that hold up after launch week. I built branding for 10+ fintech products at Payomatix, from a white label payment gateway to crypto infrastructure, each with a visual system tight enough that every asset after it stayed on brand.</p>
+                  <div class="service__tags" aria-label="Includes"><span>Identity</span><span>Guidelines</span><span>Campaign systems</span></div>
+                </div></div>
+              </div>
+            </article>
+
+            <article class="service" data-service data-service-kicker="Conversion ecosystem"
+              data-service-outcome="One connected visual language after the click." role="listitem">
+              <button class="service__trigger" type="button" aria-expanded="true" aria-controls="service-panel-4">
+                <span class="service__index mono-label">S.04</span>
+                <span class="service__heading">
+                  <small class="mono-label">Conversion ecosystem</small>
+                  <span class="service__title">Full-Funnel Digital Assets</span>
+                </span>
+                <span class="service__toggle" aria-hidden="true"><i></i></span>
+              </button>
+              <div class="service__body" id="service-panel-4" aria-hidden="false">
+                <div class="service__body-clip"><div class="service__body-inner">
+                  <p class="service__desc">Landing pages, banners, emailers, push notifications and in-app promos, designed as one connected funnel. When the ad and everything after the click come from the same hands, the message doesn't fray on the way to the conversion.</p>
+                  <div class="service__tags" aria-label="Includes"><span>Landing pages</span><span>Emailers</span><span>Push &amp; in-app</span></div>
+                </div></div>
+              </div>
+            </article>
+          </div>
         </div>
       </div>
     </section>
@@ -344,43 +412,83 @@
             Taste, with a <em>method.</em>
           </h2>
         </div>
-        <ol class="s-process__list">
-          <li class="step" data-reveal>
-            <span class="step__num">Step 01</span>
-            <div class="step__body">
-              <h3 class="step__title">Understand</h3>
-              <p>I read the brief, the data and the audience before I open Figma. <em>No design yet.</em> The problem shapes the creative, not the other way around.</p>
+        <div class="process-board" data-process-board data-reveal>
+          <div class="process-board__top">
+            <div>
+              <span class="mono-label">A repeatable creative loop</span>
+              <p>Strategy in. Learning out. Every stage earns the next.</p>
             </div>
-          </li>
-          <li class="step" data-reveal>
-            <span class="step__num">Step 02</span>
-            <div class="step__body">
-              <h3 class="step__title">Concept</h3>
-              <p>Directions explored wide with Midjourney, Firefly and ChatGPT, then narrowed by hand. AI gives me speed at the ideation stage. The judgement stays mine.</p>
+            <div class="process-board__status" aria-live="polite">
+              <strong data-process-active-index>01</strong><span>/ 05</span>
             </div>
-          </li>
-          <li class="step" data-reveal>
-            <span class="step__num">Step 03</span>
-            <div class="step__body">
-              <h3 class="step__title">Design</h3>
-              <p>The chosen route becomes finished creative in Figma, Photoshop or Illustrator. Built as a system, so the tenth variant looks like it belongs with the first.</p>
-            </div>
-          </li>
-          <li class="step" data-reveal>
-            <span class="step__num">Step 04</span>
-            <div class="step__body">
-              <h3 class="step__title">Test</h3>
-              <p>Campaigns ship in A/B variations. The audience votes with clicks, and I don't argue with the audience.</p>
-            </div>
-          </li>
-          <li class="step" data-reveal>
-            <span class="step__num">Step 05</span>
-            <div class="step__body">
-              <h3 class="step__title">Iterate</h3>
-              <p>Winners get scaled, losers get studied. That loop is how 250+ creatives at Univest turned into 40+ campaign concepts that kept getting sharper.</p>
-            </div>
-          </li>
-        </ol>
+          </div>
+          <div class="process-board__progress" aria-hidden="true"><i data-process-progress></i></div>
+
+          <div class="process-board__viewport">
+            <ol class="process-board__track" aria-label="Five-stage creative process">
+              <li class="process-stage is-active" data-process-stage>
+                <button class="process-stage__trigger" type="button" aria-pressed="true"
+                  aria-label="Step 01: Understand" aria-describedby="process-detail-1" data-cursor-view="Explore">
+                  <span class="process-stage__head"><i>01</i><small class="mono-label">Define the signal</small></span>
+                  <span class="process-stage__copy">
+                    <strong>Understand</strong>
+                    <span class="process-stage__detail" id="process-detail-1">I read the brief, the data and the audience before I open Figma. <em>No design yet.</em> The problem shapes the creative, not the other way around.</span>
+                    <span class="process-stage__output mono-label">Output · Clear brief</span>
+                  </span>
+                  <span class="process-stage__mark" aria-hidden="true">↗</span>
+                </button>
+              </li>
+              <li class="process-stage" data-process-stage>
+                <button class="process-stage__trigger" type="button" aria-pressed="false"
+                  aria-label="Step 02: Concept" aria-describedby="process-detail-2" data-cursor-view="Explore">
+                  <span class="process-stage__head"><i>02</i><small class="mono-label">Explore the field</small></span>
+                  <span class="process-stage__copy">
+                    <strong>Concept</strong>
+                    <span class="process-stage__detail" id="process-detail-2">Directions explored wide with Midjourney, Firefly and ChatGPT, then narrowed by hand. AI gives me speed at the ideation stage. The judgement stays mine.</span>
+                    <span class="process-stage__output mono-label">Output · Creative routes</span>
+                  </span>
+                  <span class="process-stage__mark" aria-hidden="true">↗</span>
+                </button>
+              </li>
+              <li class="process-stage" data-process-stage>
+                <button class="process-stage__trigger" type="button" aria-pressed="false"
+                  aria-label="Step 03: Design" aria-describedby="process-detail-3" data-cursor-view="Explore">
+                  <span class="process-stage__head"><i>03</i><small class="mono-label">Build the system</small></span>
+                  <span class="process-stage__copy">
+                    <strong>Design</strong>
+                    <span class="process-stage__detail" id="process-detail-3">The chosen route becomes finished creative in Figma, Photoshop or Illustrator. Built as a system, so the tenth variant looks like it belongs with the first.</span>
+                    <span class="process-stage__output mono-label">Output · Visual system</span>
+                  </span>
+                  <span class="process-stage__mark" aria-hidden="true">↗</span>
+                </button>
+              </li>
+              <li class="process-stage" data-process-stage>
+                <button class="process-stage__trigger" type="button" aria-pressed="false"
+                  aria-label="Step 04: Test" aria-describedby="process-detail-4" data-cursor-view="Explore">
+                  <span class="process-stage__head"><i>04</i><small class="mono-label">Release the work</small></span>
+                  <span class="process-stage__copy">
+                    <strong>Test</strong>
+                    <span class="process-stage__detail" id="process-detail-4">Campaigns ship in A/B variations. The audience votes with clicks, and I don't argue with the audience.</span>
+                    <span class="process-stage__output mono-label">Output · Live learning</span>
+                  </span>
+                  <span class="process-stage__mark" aria-hidden="true">↗</span>
+                </button>
+              </li>
+              <li class="process-stage" data-process-stage>
+                <button class="process-stage__trigger" type="button" aria-pressed="false"
+                  aria-label="Step 05: Iterate" aria-describedby="process-detail-5" data-cursor-view="Explore">
+                  <span class="process-stage__head"><i>05</i><small class="mono-label">Sharpen the winner</small></span>
+                  <span class="process-stage__copy">
+                    <strong>Iterate</strong>
+                    <span class="process-stage__detail" id="process-detail-5">Winners get scaled, losers get studied. That loop is how 250+ creatives at Univest turned into 40+ campaign concepts that kept getting sharper.</span>
+                    <span class="process-stage__output mono-label">Output · Scaled winner</span>
+                  </span>
+                  <span class="process-stage__mark" aria-hidden="true">↗</span>
+                </button>
+              </li>
+            </ol>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -393,42 +501,80 @@
             The <em>stack.</em>
           </h2>
         </div>
-        <div class="s-skills__grid">
-          <div class="skill-group" data-reveal>
-            <h3 class="skill-group__title mono-label">Design</h3>
-            <ul>
-              <li>Adobe Photoshop</li>
-              <li>Adobe Illustrator</li>
-              <li>Figma</li>
-              <li>CorelDRAW</li>
-            </ul>
-          </div>
-          <div class="skill-group" data-reveal>
-            <h3 class="skill-group__title mono-label">AI stack</h3>
-            <ul>
-              <li>Midjourney</li>
-              <li>Adobe Firefly</li>
-              <li>ChatGPT</li>
-              <li>AI-assisted ideation at scale</li>
-            </ul>
-          </div>
-          <div class="skill-group" data-reveal>
-            <h3 class="skill-group__title mono-label">Full-funnel</h3>
-            <ul>
-              <li>Landing pages &amp; banners</li>
-              <li>Emailers</li>
-              <li>Push &amp; in-app creatives</li>
-              <li>YouTube thumbnail systems</li>
-            </ul>
-          </div>
-          <div class="skill-group" data-reveal>
-            <h3 class="skill-group__title mono-label">Craft</h3>
-            <ul>
-              <li>Typography &amp; print-ready artwork</li>
-              <li>Pitch deck storytelling</li>
-              <li>A/B creative testing</li>
-              <li>Campaign visual systems</li>
-            </ul>
+        <div class="skill-atlas" data-skill-atlas data-reveal>
+          <header class="skill-atlas__head">
+            <div class="skill-atlas__active" aria-live="polite">
+              <span class="mono-label">Active lens · <i data-skill-active-index>01</i></span>
+              <strong data-skill-active-title>Design</strong>
+              <p data-skill-active-copy>Core tools for building precise, production-ready visual systems.</p>
+            </div>
+            <div class="skill-atlas__legend mono-label"><span></span>Hover, focus or select a field</div>
+          </header>
+
+          <div class="skill-atlas__matrix">
+            <article class="skill-module is-active" data-skill-group data-skill-title="Design"
+              data-skill-copy="Core tools for building precise, production-ready visual systems.">
+              <button class="skill-module__trigger" type="button" aria-pressed="true" aria-label="Select Design capability" data-cursor-view="Select">
+                <span class="skill-module__meta mono-label"><i>01</i>Primary craft</span>
+                <h3>Design</h3>
+                <span class="skill-module__arrow" aria-hidden="true">↗</span>
+              </button>
+              <ul>
+                <li><i>01</i><span>Adobe Photoshop</span></li>
+                <li><i>02</i><span>Adobe Illustrator</span></li>
+                <li><i>03</i><span>Figma</span></li>
+                <li><i>04</i><span>CorelDRAW</span></li>
+              </ul>
+            </article>
+
+            <article class="skill-module" data-skill-group data-skill-title="AI stack"
+              data-skill-copy="Fast exploration and image craft, directed by human judgement.">
+              <button class="skill-module__trigger" type="button" aria-pressed="false" aria-label="Select AI stack capability" data-cursor-view="Select">
+                <span class="skill-module__meta mono-label"><i>02</i>Exploration engine</span>
+                <h3>AI stack</h3>
+                <span class="skill-module__arrow" aria-hidden="true">↗</span>
+              </button>
+              <ul>
+                <li><i>01</i><span>Midjourney</span></li>
+                <li><i>02</i><span>Adobe Firefly</span></li>
+                <li><i>03</i><span>ChatGPT</span></li>
+                <li><i>04</i><span>AI-assisted ideation at scale</span></li>
+              </ul>
+            </article>
+
+            <article class="skill-module" data-skill-group data-skill-title="Full-funnel"
+              data-skill-copy="Connected assets that keep one visual message intact after the click.">
+              <button class="skill-module__trigger" type="button" aria-pressed="false" aria-label="Select Full-funnel capability" data-cursor-view="Select">
+                <span class="skill-module__meta mono-label"><i>03</i>Conversion system</span>
+                <h3>Full-funnel</h3>
+                <span class="skill-module__arrow" aria-hidden="true">↗</span>
+              </button>
+              <ul>
+                <li><i>01</i><span>Landing pages &amp; banners</span></li>
+                <li><i>02</i><span>Emailers</span></li>
+                <li><i>03</i><span>Push &amp; in-app creatives</span></li>
+                <li><i>04</i><span>YouTube thumbnail systems</span></li>
+              </ul>
+            </article>
+
+            <article class="skill-module" data-skill-group data-skill-title="Craft"
+              data-skill-copy="The storytelling and production judgement behind every finished asset.">
+              <button class="skill-module__trigger" type="button" aria-pressed="false" aria-label="Select Craft capability" data-cursor-view="Select">
+                <span class="skill-module__meta mono-label"><i>04</i>Finish &amp; rigour</span>
+                <h3>Craft</h3>
+                <span class="skill-module__arrow" aria-hidden="true">↗</span>
+              </button>
+              <ul>
+                <li><i>01</i><span>Typography &amp; print-ready artwork</span></li>
+                <li><i>02</i><span>Pitch deck storytelling</span></li>
+                <li><i>03</i><span>A/B creative testing</span></li>
+                <li><i>04</i><span>Campaign visual systems</span></li>
+              </ul>
+            </article>
+
+            <div class="skill-atlas__core" aria-hidden="true">
+              <span>16</span><small class="mono-label">instruments</small><i></i>
+            </div>
           </div>
         </div>
       </div>
@@ -443,35 +589,92 @@
             Six years, three <em>industries.</em>
           </h2>
         </div>
-        <div class="s-experience__list">
-          <article class="xp" data-reveal>
-            <div class="xp__when mono-label">Mar 2026 — Present</div>
-            <div class="xp__body">
-              <h3 class="xp__role">Senior Graphic Designer <span class="xp__co">Univest</span></h3>
-              <p>Design lead for performance marketing at one of India's fastest-growing fintech investment platforms. 250+ creatives across 40+ campaign concepts on Meta, Google, LinkedIn, Instagram and app campaigns, shipped in A/B variations. Full-funnel assets from landing pages and emailers to push notifications and in-app promos, coordinated with 15+ stakeholders across growth, product and content.</p>
+        <div class="career-ledger" data-career-ledger data-reveal>
+          <header class="career-ledger__head">
+            <div>
+              <span class="mono-label">Career archive · 2020—Now</span>
+              <p>Three chapters. One continuous design practice.</p>
             </div>
-            <div class="xp__where mono-label">Gurgaon</div>
-          </article>
-          <article class="xp" data-reveal>
-            <div class="xp__when mono-label">Jan 2025 — Feb 2026</div>
-            <div class="xp__body">
-              <h3 class="xp__role">Visual Designer <span class="xp__co">Payomatix Technologies</span></h3>
-              <p>Brand and marketing design for global payment products. 300+ marketing assets, 35+ investor pitch decks and sales presentations, and brand identities for 10+ fintech products: white label payment gateway, crypto infrastructure, BaaS, payment orchestration and cashier solutions. Campaign work for fintech, crypto, iGaming and banking clients worldwide.</p>
+            <div class="career-ledger__status" aria-live="polite">
+              <strong data-career-active-index>01</strong><span>/ 03 chapters</span>
             </div>
-            <div class="xp__where mono-label">Greater Noida</div>
-          </article>
-          <article class="xp" data-reveal>
-            <div class="xp__when mono-label">Jul 2020 — Dec 2024</div>
-            <div class="xp__body">
-              <h3 class="xp__role">Graphic Designer <span class="xp__co">Upkar Prakashan</span></h3>
-              <p>Started as an intern at one of India's leading educational publishers. Promoted twice. Left with 200+ book covers and marketing assets to my name, and print-ready artwork delivered across 100+ titles.</p>
-            </div>
-            <div class="xp__where mono-label">Agra</div>
-          </article>
-        </div>
-        <p class="s-experience__edu mono-label" data-reveal>M.Sc. Mathematics &amp; B.Sc. — Dr. Bhimrao Ambedkar University, Agra · Diploma, Graphic Web Design &amp; Development — Arena Animation</p>
-        <div class="s-experience__resume" data-reveal>
-          <a class="btn btn--accent btn--lg" href="assets/Nishchay_Gupta_Resume.pdf" target="_blank" rel="noopener" data-magnetic>Download resume<span class="btn__arrow">↓</span></a>
+          </header>
+          <div class="career-ledger__progress" aria-hidden="true"><i data-career-progress></i></div>
+
+          <div class="career-ledger__list">
+            <article class="career-entry is-active" data-career-entry>
+              <header class="career-entry__head">
+                <span class="career-entry__index mono-label">01</span>
+                <span class="career-entry__when mono-label">Mar 2026 — Present</span>
+                <h3 class="career-entry__role">
+                  <button class="career-entry__trigger" type="button" aria-pressed="true" data-cursor-view="Select">
+                    <span>Senior Graphic Designer</span><em>Univest</em><i aria-hidden="true">↗</i>
+                  </button>
+                </h3>
+                <span class="career-entry__where mono-label">Gurgaon</span>
+              </header>
+              <div class="career-entry__story">
+                <p>Design lead for performance marketing at one of India's fastest-growing fintech investment platforms. Full-funnel assets across growth, product and content, shipped in systematic A/B variations.</p>
+                <ul class="career-entry__proof" aria-label="Career highlights">
+                  <li><strong>250+</strong><span>creatives</span></li>
+                  <li><strong>40+</strong><span>campaign concepts</span></li>
+                  <li><strong>15+</strong><span>stakeholders</span></li>
+                </ul>
+              </div>
+              <span class="career-entry__year" aria-hidden="true">2026</span>
+            </article>
+
+            <article class="career-entry" data-career-entry>
+              <header class="career-entry__head">
+                <span class="career-entry__index mono-label">02</span>
+                <span class="career-entry__when mono-label">Jan 2025 — Feb 2026</span>
+                <h3 class="career-entry__role">
+                  <button class="career-entry__trigger" type="button" aria-pressed="false" data-cursor-view="Select">
+                    <span>Visual Designer</span><em>Payomatix Technologies</em><i aria-hidden="true">↗</i>
+                  </button>
+                </h3>
+                <span class="career-entry__where mono-label">Greater Noida</span>
+              </header>
+              <div class="career-entry__story">
+                <p>Brand and marketing design for global payment products across fintech, crypto, iGaming and banking. Visual systems ranged from investor narratives to complete product identities.</p>
+                <ul class="career-entry__proof" aria-label="Career highlights">
+                  <li><strong>300+</strong><span>marketing assets</span></li>
+                  <li><strong>35+</strong><span>pitch decks</span></li>
+                  <li><strong>10+</strong><span>brand identities</span></li>
+                </ul>
+              </div>
+              <span class="career-entry__year" aria-hidden="true">2025</span>
+            </article>
+
+            <article class="career-entry" data-career-entry>
+              <header class="career-entry__head">
+                <span class="career-entry__index mono-label">03</span>
+                <span class="career-entry__when mono-label">Jul 2020 — Dec 2024</span>
+                <h3 class="career-entry__role">
+                  <button class="career-entry__trigger" type="button" aria-pressed="false" data-cursor-view="Select">
+                    <span>Graphic Designer</span><em>Upkar Prakashan</em><i aria-hidden="true">↗</i>
+                  </button>
+                </h3>
+                <span class="career-entry__where mono-label">Agra</span>
+              </header>
+              <div class="career-entry__story">
+                <p>Started as an intern at one of India's leading educational publishers and earned two promotions. Built the production discipline behind hundreds of covers and print-ready titles.</p>
+                <ul class="career-entry__proof" aria-label="Career highlights">
+                  <li><strong>200+</strong><span>book covers</span></li>
+                  <li><strong>100+</strong><span>print titles</span></li>
+                  <li><strong>02</strong><span>promotions</span></li>
+                </ul>
+              </div>
+              <span class="career-entry__year" aria-hidden="true">2020</span>
+            </article>
+          </div>
+
+          <footer class="career-ledger__foot">
+            <p><span class="mono-label">Education</span>M.Sc. Mathematics &amp; B.Sc. · Dr. Bhimrao Ambedkar University<br>Diploma, Graphic Web Design &amp; Development · Arena Animation</p>
+            <a class="career-ledger__resume" href="assets/Nishchay_Gupta_Resume.pdf" target="_blank" rel="noopener" data-magnetic>
+              <span>Download résumé</span><i aria-hidden="true">↓</i>
+            </a>
+          </footer>
         </div>
       </div>
     </section>
@@ -485,19 +688,60 @@
             People I’ve made <em>look good.</em>
           </h2>
         </div>
-        <div class="s-testimonials__grid">
-          <figure class="quote" data-reveal>
-            <blockquote>“He built us a social language we could actually run week-on-week. Moment marketing finally stopped feeling like a template dump.”</blockquote>
-            <figcaption><span class="quote__name">Marketing Lead</span><span class="quote__role mono-label">Payomatix — global payments</span></figcaption>
-          </figure>
-          <figure class="quote" data-reveal>
-            <blockquote>“After his rework, Araya reads like a hospitality brand. The qualified inquiries changed.”</blockquote>
-            <figcaption><span class="quote__name">Gauri R. — Founder</span><span class="quote__role mono-label">Araya Estates, Noida</span></figcaption>
-          </figure>
-          <figure class="quote" data-reveal>
-            <blockquote>“A rare combination: conceptual instinct, production speed — and he actually ships on time without a PM.”</blockquote>
-            <figcaption><span class="quote__name">Creative Director</span><span class="quote__role mono-label">Brand ECG — growth studio</span></figcaption>
-          </figure>
+        <div class="voices-stage" data-voices-stage data-reveal>
+          <header class="voices-stage__head">
+            <div>
+              <span class="mono-label">Client signal · Direct from the room</span>
+              <p>What the work changed, in their words.</p>
+            </div>
+            <div class="voices-stage__count" aria-live="polite">
+              <strong data-voice-active-index>01</strong><span>/ 03</span>
+            </div>
+          </header>
+
+          <div class="voices-stage__quotes" data-voice-swipe aria-label="Client testimonials">
+            <figure class="voice is-active" id="voice-panel-1" role="tabpanel" aria-labelledby="voice-tab-1" data-voice-panel>
+              <span class="voice__mark" aria-hidden="true">“</span>
+              <blockquote>He built us a social language we could actually run week-on-week. Moment marketing finally stopped feeling like a template dump.</blockquote>
+              <figcaption>
+                <span class="voice__name">Marketing Lead</span>
+                <span class="voice__role mono-label">Payomatix · Global payments</span>
+              </figcaption>
+            </figure>
+            <figure class="voice" id="voice-panel-2" role="tabpanel" aria-labelledby="voice-tab-2" data-voice-panel>
+              <span class="voice__mark" aria-hidden="true">“</span>
+              <blockquote>After his rework, Araya reads like a hospitality brand. The qualified inquiries changed.</blockquote>
+              <figcaption>
+                <span class="voice__name">Gauri R. · Founder</span>
+                <span class="voice__role mono-label">Araya Estates · Noida</span>
+              </figcaption>
+            </figure>
+            <figure class="voice" id="voice-panel-3" role="tabpanel" aria-labelledby="voice-tab-3" data-voice-panel>
+              <span class="voice__mark" aria-hidden="true">“</span>
+              <blockquote>A rare combination: conceptual instinct, production speed—and he actually ships on time without a PM.</blockquote>
+              <figcaption>
+                <span class="voice__name">Creative Director</span>
+                <span class="voice__role mono-label">Brand ECG · Growth studio</span>
+              </figcaption>
+            </figure>
+          </div>
+
+          <div class="voices-stage__rail" role="tablist" aria-label="Choose a testimonial">
+            <button class="voice-tab is-active" id="voice-tab-1" type="button" role="tab" aria-selected="true"
+              aria-controls="voice-panel-1" tabindex="0" data-voice-tab data-cursor-view="Listen">
+              <i class="mono-label">01</i><span><strong>Marketing Lead</strong><small>Payomatix</small></span>
+            </button>
+            <button class="voice-tab" id="voice-tab-2" type="button" role="tab" aria-selected="false"
+              aria-controls="voice-panel-2" tabindex="-1" data-voice-tab data-cursor-view="Listen">
+              <i class="mono-label">02</i><span><strong>Gauri R.</strong><small>Araya Estates</small></span>
+            </button>
+            <button class="voice-tab" id="voice-tab-3" type="button" role="tab" aria-selected="false"
+              aria-controls="voice-panel-3" tabindex="-1" data-voice-tab data-cursor-view="Listen">
+              <i class="mono-label">03</i><span><strong>Creative Director</strong><small>Brand ECG</small></span>
+            </button>
+          </div>
+          <div class="voices-stage__progress" aria-hidden="true"><i data-voice-progress></i></div>
+          <p class="voices-stage__hint mono-label">Select a voice · swipe on touch</p>
         </div>
       </div>
     </section>
@@ -609,6 +853,6 @@
   <script src="js/vendor/ScrollTrigger.min.js" defer></script>
   <script src="js/data.js" defer></script>
   <script src="js/gallery-data.js" defer></script>
-  <script src="js/main.js?v=20260714-14" defer></script>
+  <script src="js/main.js?v=20260714-19" defer></script>
 </body>
 </html>

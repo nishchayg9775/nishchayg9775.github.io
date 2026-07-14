@@ -750,6 +750,271 @@
     renderFeatured(0);
   }
 
+  /* ---------------- Services capability console ---------------- */
+  const servicesConsole = doc.querySelector('[data-services-console]');
+  if (servicesConsole) {
+    const serviceItems = [...servicesConsole.querySelectorAll('[data-service]')];
+    const activeIndexEl = servicesConsole.querySelector('[data-service-active-index]');
+    const activeKickerEl = servicesConsole.querySelector('[data-service-active-kicker]');
+    const activeTitleEl = servicesConsole.querySelector('[data-service-active-title]');
+    const activeOutcomeEl = servicesConsole.querySelector('[data-service-active-outcome]');
+    let activeService = 0;
+
+    const renderService = nextIndex => {
+      activeService = (nextIndex + serviceItems.length) % serviceItems.length;
+      const selected = serviceItems[activeService];
+
+      serviceItems.forEach((item, index) => {
+        const isActive = index === activeService;
+        item.classList.toggle('is-active', isActive);
+        item.querySelector('.service__trigger')?.setAttribute('aria-expanded', String(isActive));
+        item.querySelector('.service__body')?.setAttribute('aria-hidden', String(!isActive));
+      });
+
+      activeIndexEl.textContent = String(activeService + 1).padStart(2, '0');
+      activeKickerEl.textContent = selected.dataset.serviceKicker;
+      activeTitleEl.textContent = selected.querySelector('.service__title').textContent;
+      activeOutcomeEl.textContent = selected.dataset.serviceOutcome;
+    };
+
+    servicesConsole.classList.add('is-enhanced');
+    servicesConsole.addEventListener('click', event => {
+      const trigger = event.target.closest('.service__trigger');
+      if (!trigger || !servicesConsole.contains(trigger)) return;
+      renderService(serviceItems.indexOf(trigger.closest('[data-service]')));
+    });
+    servicesConsole.addEventListener('keydown', event => {
+      const trigger = event.target.closest('.service__trigger');
+      if (!trigger || !servicesConsole.contains(trigger)) return;
+
+      let nextIndex = null;
+      if (event.key === 'ArrowDown' || event.key === 'ArrowRight') nextIndex = activeService + 1;
+      else if (event.key === 'ArrowUp' || event.key === 'ArrowLeft') nextIndex = activeService - 1;
+      else if (event.key === 'Home') nextIndex = 0;
+      else if (event.key === 'End') nextIndex = serviceItems.length - 1;
+      if (nextIndex === null) return;
+
+      event.preventDefault();
+      renderService(nextIndex);
+      serviceItems[activeService].querySelector('.service__trigger')?.focus();
+    });
+    renderService(0);
+  }
+
+  /* ---------------- Process studio runway ---------------- */
+  const processBoard = doc.querySelector('[data-process-board]');
+  if (processBoard) {
+    const processStages = [...processBoard.querySelectorAll('[data-process-stage]')];
+    const processViewport = processBoard.querySelector('.process-board__viewport');
+    const processIndex = processBoard.querySelector('[data-process-active-index]');
+    const processProgress = processBoard.querySelector('[data-process-progress]');
+    let activeProcess = 0;
+    let processScrollFrame = 0;
+
+    const renderProcess = nextIndex => {
+      activeProcess = (nextIndex + processStages.length) % processStages.length;
+      processStages.forEach((stage, index) => {
+        const isActive = index === activeProcess;
+        stage.classList.toggle('is-active', isActive);
+        stage.querySelector('.process-stage__trigger')?.setAttribute('aria-pressed', String(isActive));
+      });
+      processIndex.textContent = String(activeProcess + 1).padStart(2, '0');
+      processProgress.style.transform = `scaleX(${(activeProcess + 1) / processStages.length})`;
+    };
+
+    processBoard.classList.add('is-enhanced');
+    processBoard.addEventListener('click', event => {
+      const trigger = event.target.closest('.process-stage__trigger');
+      if (!trigger || !processBoard.contains(trigger)) return;
+      renderProcess(processStages.indexOf(trigger.closest('[data-process-stage]')));
+    });
+    processBoard.addEventListener('keydown', event => {
+      const trigger = event.target.closest('.process-stage__trigger');
+      if (!trigger || !processBoard.contains(trigger)) return;
+
+      let nextIndex = null;
+      if (event.key === 'ArrowRight' || event.key === 'ArrowDown') nextIndex = activeProcess + 1;
+      else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') nextIndex = activeProcess - 1;
+      else if (event.key === 'Home') nextIndex = 0;
+      else if (event.key === 'End') nextIndex = processStages.length - 1;
+      if (nextIndex === null) return;
+
+      event.preventDefault();
+      renderProcess(nextIndex);
+      processStages[activeProcess].querySelector('.process-stage__trigger')?.focus();
+    });
+    processViewport.addEventListener('scroll', () => {
+      if (innerWidth > 860 || processScrollFrame) return;
+      processScrollFrame = requestAnimationFrame(() => {
+        processScrollFrame = 0;
+        const viewportCentre = processViewport.getBoundingClientRect().left + processViewport.clientWidth / 2;
+        let nearest = 0;
+        let nearestDistance = Infinity;
+        processStages.forEach((stage, index) => {
+          const rect = stage.getBoundingClientRect();
+          const distance = Math.abs(rect.left + rect.width / 2 - viewportCentre);
+          if (distance < nearestDistance) { nearest = index; nearestDistance = distance; }
+        });
+        if (nearest !== activeProcess) renderProcess(nearest);
+      });
+    }, { passive: true });
+    renderProcess(0);
+  }
+
+  /* ---------------- Skills capability atlas ---------------- */
+  const skillAtlas = doc.querySelector('[data-skill-atlas]');
+  if (skillAtlas) {
+    const skillGroups = [...skillAtlas.querySelectorAll('[data-skill-group]')];
+    const skillActiveIndex = skillAtlas.querySelector('[data-skill-active-index]');
+    const skillActiveTitle = skillAtlas.querySelector('[data-skill-active-title]');
+    const skillActiveCopy = skillAtlas.querySelector('[data-skill-active-copy]');
+    let activeSkill = 0;
+
+    const renderSkill = nextIndex => {
+      activeSkill = (nextIndex + skillGroups.length) % skillGroups.length;
+      const selected = skillGroups[activeSkill];
+      skillGroups.forEach((group, index) => {
+        const isActive = index === activeSkill;
+        group.classList.toggle('is-active', isActive);
+        group.querySelector('.skill-module__trigger')?.setAttribute('aria-pressed', String(isActive));
+      });
+      skillActiveIndex.textContent = String(activeSkill + 1).padStart(2, '0');
+      skillActiveTitle.textContent = selected.dataset.skillTitle;
+      skillActiveCopy.textContent = selected.dataset.skillCopy;
+    };
+
+    skillGroups.forEach((group, index) => {
+      const trigger = group.querySelector('.skill-module__trigger');
+      trigger.addEventListener('click', () => renderSkill(index));
+      trigger.addEventListener('focus', () => renderSkill(index));
+      group.addEventListener('pointerenter', () => { if (FINE_POINTER) renderSkill(index); });
+    });
+    skillAtlas.addEventListener('keydown', event => {
+      const trigger = event.target.closest('.skill-module__trigger');
+      if (!trigger || !skillAtlas.contains(trigger)) return;
+
+      let nextIndex = null;
+      if (event.key === 'ArrowRight') nextIndex = activeSkill + 1;
+      else if (event.key === 'ArrowLeft') nextIndex = activeSkill - 1;
+      else if (event.key === 'ArrowDown') nextIndex = activeSkill + 2;
+      else if (event.key === 'ArrowUp') nextIndex = activeSkill - 2;
+      else if (event.key === 'Home') nextIndex = 0;
+      else if (event.key === 'End') nextIndex = skillGroups.length - 1;
+      if (nextIndex === null) return;
+
+      event.preventDefault();
+      renderSkill(nextIndex);
+      skillGroups[activeSkill].querySelector('.skill-module__trigger')?.focus();
+    });
+    renderSkill(0);
+  }
+
+  /* ---------------- Career ledger ---------------- */
+  const careerLedger = doc.querySelector('[data-career-ledger]');
+  if (careerLedger) {
+    const careerEntries = [...careerLedger.querySelectorAll('[data-career-entry]')];
+    const careerActiveIndex = careerLedger.querySelector('[data-career-active-index]');
+    const careerProgress = careerLedger.querySelector('[data-career-progress]');
+    let activeCareer = 0;
+
+    const renderCareer = nextIndex => {
+      activeCareer = (nextIndex + careerEntries.length) % careerEntries.length;
+      careerEntries.forEach((entry, index) => {
+        const isActive = index === activeCareer;
+        entry.classList.toggle('is-active', isActive);
+        entry.querySelector('.career-entry__trigger')?.setAttribute('aria-pressed', String(isActive));
+      });
+      careerActiveIndex.textContent = String(activeCareer + 1).padStart(2, '0');
+      careerProgress.style.transform = `scaleX(${(activeCareer + 1) / careerEntries.length})`;
+    };
+
+    careerEntries.forEach((entry, index) => {
+      const trigger = entry.querySelector('.career-entry__trigger');
+      trigger.addEventListener('click', () => renderCareer(index));
+      trigger.addEventListener('focus', () => renderCareer(index));
+      entry.addEventListener('pointerenter', () => { if (FINE_POINTER) renderCareer(index); });
+    });
+    careerLedger.addEventListener('keydown', event => {
+      const trigger = event.target.closest('.career-entry__trigger');
+      if (!trigger || !careerLedger.contains(trigger)) return;
+
+      let nextIndex = null;
+      if (event.key === 'ArrowDown' || event.key === 'ArrowRight') nextIndex = activeCareer + 1;
+      else if (event.key === 'ArrowUp' || event.key === 'ArrowLeft') nextIndex = activeCareer - 1;
+      else if (event.key === 'Home') nextIndex = 0;
+      else if (event.key === 'End') nextIndex = careerEntries.length - 1;
+      if (nextIndex === null) return;
+
+      event.preventDefault();
+      renderCareer(nextIndex);
+      careerEntries[activeCareer].querySelector('.career-entry__trigger')?.focus();
+    });
+    renderCareer(0);
+  }
+
+  /* ---------------- Word of mouth quote stage ---------------- */
+  const voicesStage = doc.querySelector('[data-voices-stage]');
+  if (voicesStage) {
+    const voicePanels = [...voicesStage.querySelectorAll('[data-voice-panel]')];
+    const voiceTabs = [...voicesStage.querySelectorAll('[data-voice-tab]')];
+    const voiceIndex = voicesStage.querySelector('[data-voice-active-index]');
+    const voiceProgress = voicesStage.querySelector('[data-voice-progress]');
+    const voiceSwipe = voicesStage.querySelector('[data-voice-swipe]');
+    const voiceRail = voicesStage.querySelector('.voices-stage__rail');
+    let activeVoice = 0;
+    let voiceStartX = 0;
+    let voiceStartY = 0;
+
+    const renderVoice = (nextIndex, moveFocus = false) => {
+      activeVoice = (nextIndex + voicePanels.length) % voicePanels.length;
+      voicePanels.forEach((panel, index) => {
+        const isActive = index === activeVoice;
+        panel.classList.toggle('is-active', isActive);
+        panel.setAttribute('aria-hidden', String(!isActive));
+        panel.inert = !isActive;
+      });
+      voiceTabs.forEach((tab, index) => {
+        const isActive = index === activeVoice;
+        tab.classList.toggle('is-active', isActive);
+        tab.setAttribute('aria-selected', String(isActive));
+        tab.tabIndex = isActive ? 0 : -1;
+      });
+      voiceIndex.textContent = String(activeVoice + 1).padStart(2, '0');
+      voiceProgress.style.transform = `scaleX(${(activeVoice + 1) / voicePanels.length})`;
+      if (innerWidth <= 720 && voiceRail.scrollWidth > voiceRail.clientWidth) {
+        voiceRail.scrollTo({ left: Math.max(0, voiceTabs[activeVoice].offsetLeft - 16), behavior: 'auto' });
+      }
+      if (moveFocus) voiceTabs[activeVoice].focus();
+    };
+
+    voicesStage.classList.add('is-enhanced');
+    voiceTabs.forEach((tab, index) => tab.addEventListener('click', () => renderVoice(index)));
+    voiceRail.addEventListener('keydown', event => {
+      let nextIndex = null;
+      if (event.key === 'ArrowRight' || event.key === 'ArrowDown') nextIndex = activeVoice + 1;
+      else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') nextIndex = activeVoice - 1;
+      else if (event.key === 'Home') nextIndex = 0;
+      else if (event.key === 'End') nextIndex = voiceTabs.length - 1;
+      if (nextIndex === null) return;
+      event.preventDefault();
+      renderVoice(nextIndex, true);
+    });
+    voiceSwipe.addEventListener('pointerdown', event => {
+      if (!event.isPrimary || event.pointerType === 'mouse') return;
+      voiceStartX = event.clientX;
+      voiceStartY = event.clientY;
+    }, { passive: true });
+    voiceSwipe.addEventListener('pointerup', event => {
+      if (!event.isPrimary || event.pointerType === 'mouse') return;
+      const deltaX = event.clientX - voiceStartX;
+      const deltaY = event.clientY - voiceStartY;
+      if (Math.abs(deltaX) >= 48 && Math.abs(deltaX) > Math.abs(deltaY) * 1.15) {
+        renderVoice(activeVoice + (deltaX < 0 ? 1 : -1));
+      }
+    }, { passive: true });
+    renderVoice(0);
+  }
+
   /* ---------------- Case study overlay ---------------- */
   const caseRootEl = doc.querySelector('[data-case]');
   const casePanel = caseRootEl.querySelector('.case__panel');
