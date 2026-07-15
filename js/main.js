@@ -1652,16 +1652,20 @@
   const socialCardHTML = (it, index) => {
     const [src, w, h] = it.thumb || it.cover;
     const format = w === h ? 'Square' : w < h ? 'Portrait' : 'Landscape';
+    const number = String(index + 1).padStart(2, '0');
     return `<button class="social-tile" data-gal-open="${esc(it.id)}" data-cursor-view="View"
+      data-social-card data-social-index="${index}" data-social-no="${number}"
+      data-social-card-title="${esc(it.title)}" data-social-card-format="${format}"
       aria-label="View social post: ${esc(it.title)}">
       <span class="social-tile__top">
         <span class="social-tile__dot" aria-hidden="true"></span>
-        <span class="mono-label">Post ${String(index + 1).padStart(2, '0')}</span>
+        <span class="mono-label">Post ${number}</span>
         <span class="social-tile__format">${format}</span>
       </span>
       <span class="social-tile__media">
         <img src="${encodeURI(src)}" alt="${esc(it.title)} — ${esc(galCatLabel[it.cat] || '')}"
           width="${w}" height="${h}" loading="lazy" decoding="async">
+        <span class="social-tile__status" aria-hidden="true"><i></i></span>
       </span>
       <span class="social-tile__meta">
         <strong>${esc(it.title)}</strong>
@@ -1670,22 +1674,47 @@
     </button>`;
   };
 
-  const socialShowcaseHTML = (items, label) =>
-    `<div class="rail rail--social" data-reveal>
+  const socialShowcaseHTML = (items, label) => {
+    if (!items.length) return '';
+    const initial = items[0];
+    const [, initialW, initialH] = initial.thumb || initial.cover;
+    const initialFormat = initialW === initialH ? 'Square' : initialW < initialH ? 'Portrait' : 'Landscape';
+    return `<div class="rail rail--social" data-reveal>
       <div class="rail__head">
         <div>
-          <h3 class="rail__title">${esc(label)}<sup>${items.length}</sup></h3>
-          <p class="rail__note">Campaign-ready feed creatives · swipe through the series</p>
+          <span class="mono-label social-studio__eyebrow">Curated feed studio</span>
+          <h3 class="rail__title social-studio__title">Social media <em>posts</em></h3>
         </div>
-        <div class="rail__nav">
-          <button class="rail__btn" data-rail-prev aria-label="Scroll ${esc(label)} back">←</button>
-          <button class="rail__btn" data-rail-next aria-label="Scroll ${esc(label)} forward">→</button>
-        </div>
+        <p class="social-studio__intro">Campaign-ready feed creatives · swipe through the series</p>
       </div>
-      <div class="rail__track social-carousel" data-rail-track role="group" aria-label="${esc(label)} — ${items.length} pieces">
-        ${items.map(socialCardHTML).join('')}
+      <div class="social-studio__stage">
+        <span class="social-studio__orbit" aria-hidden="true"></span>
+        <div class="social-studio__legend" aria-hidden="true">
+          <span><i></i> Live archive</span>
+          <small>Drag · swipe · arrow keys</small>
+        </div>
+        <div class="rail__track social-carousel" data-rail-track data-social-track tabindex="0"
+          role="group" aria-label="${esc(label)} — ${items.length} pieces. Swipe or use arrow keys to browse.">
+          ${items.map(socialCardHTML).join('')}
+        </div>
+        <div class="social-studio__readout" aria-live="polite">
+          <div class="social-studio__count">
+            <strong data-social-current>01</strong>
+            <span>/ ${String(items.length).padStart(2, '0')}</span>
+          </div>
+          <div class="social-studio__copy">
+            <small class="mono-label" data-social-format>${initialFormat}</small>
+            <strong data-social-title>${esc(initial.title)}</strong>
+          </div>
+          <span class="social-studio__progress" aria-hidden="true"><i data-social-progress></i></span>
+          <div class="rail__nav">
+            <button class="rail__btn" data-rail-prev aria-label="Show previous social post">←</button>
+            <button class="rail__btn" data-rail-next aria-label="Show next social post">→</button>
+          </div>
+        </div>
       </div>
     </div>`;
+  };
 
   const festivalCardHTML = (it, index) => {
     const [src, w, h] = it.thumb || it.cover;
@@ -1711,14 +1740,17 @@
 
   const festivalShowcaseHTML = (items, label) =>
     `<div class="rail rail--festivals" data-reveal>
-      <div class="rail__head">
+      <div class="rail__head archive-heading">
         <div>
-          <h3 class="rail__title">${esc(label)}<sup>${items.length}</sup></h3>
-          <p class="rail__note">A cultural calendar · festivals, observances and live moments</p>
+          <span class="mono-label archive-heading__eyebrow">Cultural calendar · ${items.length} selected moments</span>
+          <h3 class="rail__title archive-heading__title">Festival <em>&amp; moment posts</em></h3>
         </div>
-        <div class="rail__nav">
-          <button class="rail__btn" data-rail-prev aria-label="Scroll ${esc(label)} back">←</button>
-          <button class="rail__btn" data-rail-next aria-label="Scroll ${esc(label)} forward">→</button>
+        <div class="archive-heading__aside">
+          <p>A cultural calendar · festivals, observances and live moments</p>
+          <div class="rail__nav">
+            <button class="rail__btn" data-rail-prev aria-label="Scroll ${esc(label)} back">←</button>
+            <button class="rail__btn" data-rail-next aria-label="Scroll ${esc(label)} forward">→</button>
+          </div>
         </div>
       </div>
       <div class="rail__track festival-timeline" data-rail-track role="group" aria-label="${esc(label)} — ${items.length} pieces">
@@ -1753,14 +1785,17 @@
 
   const thumbnailShowcaseHTML = (items, label) =>
     `<div class="rail rail--thumbnails" data-reveal>
-      <div class="rail__head">
+      <div class="rail__head archive-heading">
         <div>
-          <h3 class="rail__title">${esc(label)}<sup>${items.length}</sup></h3>
-          <p class="rail__note">Editorial video covers · built for the first click</p>
+          <span class="mono-label archive-heading__eyebrow">Editorial video · ${items.length} selected covers</span>
+          <h3 class="rail__title archive-heading__title">YouTube <em>thumbnails</em></h3>
         </div>
-        <div class="rail__nav">
-          <button class="rail__btn" data-rail-prev aria-label="Scroll ${esc(label)} back">←</button>
-          <button class="rail__btn" data-rail-next aria-label="Scroll ${esc(label)} forward">→</button>
+        <div class="archive-heading__aside">
+          <p>Editorial video covers · built for the first click</p>
+          <div class="rail__nav">
+            <button class="rail__btn" data-rail-prev aria-label="Scroll ${esc(label)} back">←</button>
+            <button class="rail__btn" data-rail-next aria-label="Scroll ${esc(label)} forward">→</button>
+          </div>
         </div>
       </div>
       <div class="rail__track thumbnail-reel" data-rail-track role="group" aria-label="${esc(label)} — ${items.length} pieces">
@@ -1795,15 +1830,17 @@
 
   const bannerShowcaseHTML = (items, label) =>
     `<div class="rail rail--banners" data-reveal>
-      <div class="rail__head">
+      <div class="rail__head archive-heading">
         <div>
-          <span class="mono-label banner-lab__eyebrow">Responsive display lab</span>
-          <h3 class="rail__title">${esc(label)}<sup>${items.length}</sup></h3>
-          <p class="rail__note">Campaign canvases · previewed at their native proportions</p>
+          <span class="mono-label archive-heading__eyebrow">Responsive display lab · ${items.length} selected banners</span>
+          <h3 class="rail__title archive-heading__title">Website <em>banners</em></h3>
         </div>
-        <div class="rail__nav">
-          <button class="rail__btn" data-rail-prev aria-label="Scroll ${esc(label)} back">←</button>
-          <button class="rail__btn" data-rail-next aria-label="Scroll ${esc(label)} forward">→</button>
+        <div class="archive-heading__aside">
+          <p>Campaign canvases · previewed at their native proportions</p>
+          <div class="rail__nav">
+            <button class="rail__btn" data-rail-prev aria-label="Scroll ${esc(label)} back">←</button>
+            <button class="rail__btn" data-rail-next aria-label="Scroll ${esc(label)} forward">→</button>
+          </div>
         </div>
       </div>
       <div class="rail__track banner-browser-strip" data-rail-track role="group"
@@ -2754,33 +2791,177 @@
       renderInterior(0);
     }
 
+    // Social studio: keep one post explicitly selected, expose its metadata,
+    // and let buttons / keyboard advance exactly one card at a time.
+    const socialTrack = railsWrap.querySelector('[data-social-track]');
+    const socialCards = socialTrack ? [...socialTrack.querySelectorAll('[data-social-card]')] : [];
+    let syncSocialCoverflowNow = null;
+    let socialSyncRaf = null;
+    let socialActiveIndex = -1;
+    let socialCanWarm = false;
+    let socialCenters = [];
+    const refreshSocialGeometry = () => {
+      socialCenters = socialCards.map(card => card.offsetLeft + card.offsetWidth / 2);
+    };
+    const warmSocialMedia = index => {
+      if (!socialCanWarm) return;
+      const start = Math.max(0, index - 3);
+      const end = Math.min(socialCards.length, index + 9);
+      for (let i = start; i < end; i++) {
+        const img = socialCards[i].querySelector('img');
+        if (!img || img.dataset.socialWarm === 'true') continue;
+        img.dataset.socialWarm = 'true';
+        img.loading = 'eager';
+        if (typeof img.decode === 'function') img.decode().catch(() => {});
+      }
+    };
+    const syncSocialState = () => {
+      socialSyncRaf = null;
+      if (!socialTrack || !socialCards.length) return;
+      const viewportCenter = socialTrack.scrollLeft + socialTrack.clientWidth / 2;
+      let active = socialCards[0];
+      let nearest = Infinity;
+      socialCards.forEach((card, cardIndex) => {
+        const center = socialCenters[cardIndex] ?? (card.offsetLeft + card.offsetWidth / 2);
+        const distance = Math.abs(center - viewportCenter);
+        if (distance < nearest) { nearest = distance; active = card; }
+      });
+      const index = Number(active.dataset.socialIndex) || 0;
+      if (index === socialActiveIndex) return;
+      const previous = socialCards[socialActiveIndex];
+      if (previous) {
+        previous.classList.remove('is-active');
+        previous.removeAttribute('aria-current');
+      }
+      active.classList.add('is-active');
+      active.setAttribute('aria-current', 'true');
+      socialActiveIndex = index;
+      warmSocialMedia(index);
+      const rail = socialTrack.closest('.rail--social');
+      if (!rail) return;
+      const current = rail.querySelector('[data-social-current]');
+      const title = rail.querySelector('[data-social-title]');
+      const format = rail.querySelector('[data-social-format]');
+      const progress = rail.querySelector('[data-social-progress]');
+      if (current) current.textContent = String(index + 1).padStart(2, '0');
+      if (title) title.textContent = active.dataset.socialCardTitle || '';
+      if (format) format.textContent = active.dataset.socialCardFormat || '';
+      if (progress) progress.style.width = `${((index + 1) / socialCards.length * 100).toFixed(2)}%`;
+    };
+    const scheduleSocialSync = () => {
+      if (!socialSyncRaf) socialSyncRaf = requestAnimationFrame(syncSocialState);
+    };
+    const scrollSocialTo = index => {
+      if (!socialTrack || !socialCards.length) return;
+      const clamped = Math.max(0, Math.min(socialCards.length - 1, index));
+      const card = socialCards[clamped];
+      const center = socialCenters[clamped] ?? (card.offsetLeft + card.offsetWidth / 2);
+      const target = center - socialTrack.clientWidth / 2;
+      if (!REDUCED && typeof gsap !== 'undefined') {
+        gsap.killTweensOf(socialTrack, 'scrollLeft');
+        gsap.to(socialTrack, {
+          scrollLeft: target,
+          duration: .78,
+          ease: 'power3.out',
+          overwrite: 'auto',
+          onUpdate: scheduleSocialSync
+        });
+      } else {
+        socialTrack.scrollTo({ left: target, behavior: REDUCED ? 'auto' : 'smooth' });
+      }
+    };
+    const stepSocial = direction => {
+      const current = socialCards.findIndex(card => card.classList.contains('is-active'));
+      scrollSocialTo((current < 0 ? 0 : current) + direction);
+    };
+    if (socialTrack) {
+      const socialRail = socialTrack.closest('.rail--social');
+      if ('IntersectionObserver' in window && socialRail) {
+        const socialWarmObserver = new IntersectionObserver(entries => {
+          if (!entries.some(entry => entry.isIntersecting)) return;
+          socialCanWarm = true;
+          warmSocialMedia(Math.max(0, socialActiveIndex));
+          socialWarmObserver.disconnect();
+        }, { rootMargin: '800px 0px' });
+        socialWarmObserver.observe(socialRail);
+      } else {
+        socialCanWarm = true;
+      }
+      socialTrack.addEventListener('scroll', scheduleSocialSync, { passive: true });
+      socialTrack.addEventListener('pointerdown', () => {
+        if (typeof gsap !== 'undefined') gsap.killTweensOf(socialTrack, 'scrollLeft');
+      }, { passive: true });
+      socialTrack.addEventListener('wheel', () => {
+        if (typeof gsap !== 'undefined') gsap.killTweensOf(socialTrack, 'scrollLeft');
+      }, { passive: true });
+      socialTrack.addEventListener('keydown', e => {
+        if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+        e.preventDefault();
+        stepSocial(e.key === 'ArrowRight' ? 1 : -1);
+      });
+      window.addEventListener('resize', () => {
+        refreshSocialGeometry();
+        scheduleSocialSync();
+      }, { passive: true });
+      requestAnimationFrame(() => {
+        refreshSocialGeometry();
+        syncSocialState();
+      });
+    }
+
     // arrow buttons page the rail
     railsWrap.addEventListener('click', e => {
       const btn = e.target.closest('[data-rail-prev], [data-rail-next]');
       if (!btn) return;
       const track = btn.closest('.rail').querySelector('[data-rail-track]');
       const dir = btn.hasAttribute('data-rail-next') ? 1 : -1;
+      if (track === socialTrack) { stepSocial(dir); return; }
       recenterRail(track, true); // make room before the smooth glide starts
       track.scrollBy({ left: dir * track.clientWidth * 0.85, behavior: REDUCED ? 'auto' : 'smooth' });
     });
 
     // mouse drag-to-scroll; a real drag must not fire the card click
     let dragTrack = null, dragStartX = 0, dragStartLeft = 0, dragDist = 0;
+    let dragTargetLeft = 0, dragScrollRaf = null;
+    const commitDragScroll = () => {
+      dragScrollRaf = null;
+      if (!dragTrack) return;
+      dragTrack.scrollLeft = dragTargetLeft;
+      if (dragTrack === socialTrack && syncSocialCoverflowNow) syncSocialCoverflowNow(socialTrack);
+    };
     railsWrap.addEventListener('pointerdown', e => {
       const track = e.target.closest('[data-rail-track]');
       if (!track || e.pointerType !== 'mouse') return; // touch scrolls natively
-      dragTrack = track; dragStartX = e.clientX; dragStartLeft = track.scrollLeft; dragDist = 0;
+      dragTrack = track;
+      dragStartX = e.clientX;
+      dragStartLeft = track.scrollLeft;
+      dragTargetLeft = dragStartLeft;
+      dragDist = 0;
     });
     window.addEventListener('pointermove', e => {
       if (!dragTrack) return;
       const dx = e.clientX - dragStartX;
       dragDist = Math.max(dragDist, Math.abs(dx));
       if (dragDist > 6) dragTrack.classList.add('is-dragging');
-      dragTrack.scrollLeft = dragStartLeft - dx;
+      dragTargetLeft = dragStartLeft - dx;
+      if (dragTrack === socialTrack) {
+        if (!dragScrollRaf) dragScrollRaf = requestAnimationFrame(commitDragScroll);
+      } else {
+        dragTrack.scrollLeft = dragTargetLeft;
+      }
     });
     window.addEventListener('pointerup', () => {
       if (!dragTrack) return;
+      if (dragScrollRaf) {
+        cancelAnimationFrame(dragScrollRaf);
+        dragScrollRaf = null;
+        dragTrack.scrollLeft = dragTargetLeft;
+      }
       dragTrack.classList.remove('is-dragging');
+      if (dragTrack === socialTrack && syncSocialCoverflowNow) {
+        syncSocialCoverflowNow(socialTrack);
+        scheduleSocialSync();
+      }
       dragTrack = null;
     });
     railsWrap.addEventListener('click', e => {
@@ -2968,7 +3149,8 @@
         const sl = track.scrollLeft;
         const lo = sl - cw * 0.6, hi = sl + cw * 1.6; // only touch cards near the viewport
         const st = loopState.get(track);
-        const centers = (st && st.centers) ||
+        const centers = (isSocial && socialCenters.length === track.children.length && socialCenters) ||
+          (st && st.centers) ||
           [...track.children].map(el => el.offsetLeft + el.offsetWidth / 2);
         const kids = track.children;
         for (let i = 0; i < kids.length; i++) {
@@ -2977,23 +3159,29 @@
           const card = kids[i];
           const n = Math.max(-1, Math.min(1, (c - sl - mid) / mid));
           const distance = Math.abs(n);
-          const maxAngle = isSocial ? 42 : MAX_ANGLE;
-          const nearZ = isSocial ? 58 : NEAR_Z;
-          const farZ = isSocial ? -118 : FAR_Z;
+          const maxAngle = isSocial ? 24 : MAX_ANGLE;
+          const nearZ = isSocial ? 72 : NEAR_Z;
+          const farZ = isSocial ? -150 : FAR_Z;
           const z = nearZ + (farZ - nearZ) * distance;
-          const arcY = isSocial ? Math.pow(distance, 1.35) * 24 : 0;
-          const scale = isSocial ? 1 - distance * 0.065 : 1;
-          const tf = `translateY(${arcY.toFixed(1)}px) translateZ(${z.toFixed(1)}px) rotateY(${(n * maxAngle).toFixed(2)}deg) scale(${scale.toFixed(3)})`;
+          const arcY = isSocial ? Math.pow(distance, 1.3) * 42 : 0;
+          const scale = isSocial ? 1 - distance * 0.12 : 1;
+          const rotateZ = isSocial ? n * -2.8 : 0;
+          const tf = `translateY(${arcY.toFixed(1)}px) translateZ(${z.toFixed(1)}px) rotateY(${(n * maxAngle).toFixed(2)}deg) rotateZ(${rotateZ.toFixed(2)}deg) scale(${scale.toFixed(3)})`;
           if (isSocial) card.style.zIndex = String(100 - Math.round(distance * 60));
+          if (isSocial) card.style.setProperty('--social-distance', distance.toFixed(3));
           if (card.style.transform !== tf) card.style.transform = tf;
         }
       };
+      syncSocialCoverflowNow = updateTrack;
       const queued = new Set();
       let coverflowRaf = null;
       const flushCoverflow = () => { queued.forEach(updateTrack); queued.clear(); coverflowRaf = null; };
       const scheduleCoverflow = t => { queued.add(t); if (!coverflowRaf) coverflowRaf = requestAnimationFrame(flushCoverflow); };
       coverflowTracks.forEach(t => {
-        t.addEventListener('scroll', () => scheduleCoverflow(t), { passive: true });
+        t.addEventListener('scroll', () => {
+          if (t === socialTrack && t.classList.contains('is-dragging')) return;
+          scheduleCoverflow(t);
+        }, { passive: true });
         scheduleCoverflow(t);
       });
       window.addEventListener('resize', () => coverflowTracks.forEach(scheduleCoverflow), { passive: true });
