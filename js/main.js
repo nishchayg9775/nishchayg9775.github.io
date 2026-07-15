@@ -1807,6 +1807,8 @@
     const [src, w, h] = it.thumb || it.cover;
     const [, fullW, fullH] = it.cover || it.thumb;
     return `<button class="banner-browser" style="--banner-ar: ${w} / ${h}" data-gal-open="${esc(it.id)}"
+      data-banner-index="${String(index + 1).padStart(2, '0')}" data-banner-title="${esc(it.title)}"
+      data-banner-size="${fullW} × ${fullH}"
       data-cursor-view="View" aria-label="View website banner: ${esc(it.title)}">
       <span class="banner-browser__chrome" aria-hidden="true">
         <span class="banner-browser__lights"><i></i><i></i><i></i></span>
@@ -1843,9 +1845,20 @@
           </div>
         </div>
       </div>
-      <div class="rail__track banner-browser-strip" data-rail-track role="group"
-        aria-label="${esc(label)} — ${items.length} pieces">
-        ${items.map((it, index) => bannerCardHTML(it, index, items.length)).join('')}
+      <div class="banner-stage" data-banner-stage>
+        <div class="banner-stage__ruler" aria-hidden="true">
+          <span>320</span><i></i><span>768</span><i></i><span>1440</span><i></i><span>Fluid canvas</span>
+        </div>
+        <div class="rail__track banner-browser-strip" data-rail-track role="group" tabindex="0"
+          aria-roledescription="carousel" aria-label="${esc(label)} — ${items.length} pieces">
+          ${items.map((it, index) => bannerCardHTML(it, index, items.length)).join('')}
+        </div>
+        <div class="banner-stage__readout" aria-live="polite">
+          <span class="mono-label" data-banner-readout-index>Canvas 01 / ${String(items.length).padStart(2, '0')}</span>
+          <strong data-banner-readout-title>${esc(items[0]?.title || label)}</strong>
+          <span class="banner-stage__size" data-banner-readout-size>${items[0] ? `${items[0].cover?.[1] || items[0].thumb?.[1]} × ${items[0].cover?.[2] || items[0].thumb?.[2]}` : ''}</span>
+          <span class="mono-label banner-stage__hint">Drag · swipe · auto pilot</span>
+        </div>
       </div>
     </div>`;
 
@@ -3018,6 +3031,60 @@
       recenterRail(track, true);
       track.addEventListener('scroll', () => recenterRail(track), { passive: true });
     });
+
+    // Keep one website-banner canvas in focus while adjacent canvases remain
+    // legible previews. Only three class names change as the rail moves, so
+    // drag and continuous autoplay stay lightweight.
+    const bannerStage = railsWrap.querySelector('[data-banner-stage]');
+    const bannerTrack = bannerStage && bannerStage.querySelector('[data-rail-track]');
+    if (bannerStage && bannerTrack) {
+      const readoutIndex = bannerStage.querySelector('[data-banner-readout-index]');
+      const readoutTitle = bannerStage.querySelector('[data-banner-readout-title]');
+      const readoutSize = bannerStage.querySelector('[data-banner-readout-size]');
+      const total = loopState.get(bannerTrack)?.originals.length || bannerTrack.children.length;
+      let focusedCards = [];
+      let bannerSyncRaf = null;
+
+      const syncBannerStage = () => {
+        bannerSyncRaf = null;
+        const centers = loopState.get(bannerTrack)?.centers;
+        if (!centers?.length) return;
+        const target = bannerTrack.scrollLeft + bannerTrack.clientWidth / 2;
+        let low = 0, high = centers.length - 1;
+        while (low < high) {
+          const mid = (low + high) >> 1;
+          if (centers[mid] < target) low = mid + 1;
+          else high = mid;
+        }
+        let activeIndex = low;
+        if (activeIndex > 0 && Math.abs(centers[activeIndex - 1] - target) < Math.abs(centers[activeIndex] - target)) activeIndex--;
+        const cards = bannerTrack.children;
+        const activeCard = cards[activeIndex];
+        if (!activeCard || focusedCards[0] === activeCard) return;
+
+        focusedCards.forEach(card => {
+          card?.classList.remove('is-active', 'is-near');
+          card?.removeAttribute('aria-current');
+        });
+        const previousCard = cards[activeIndex - 1];
+        const nextCard = cards[activeIndex + 1];
+        activeCard.classList.add('is-active');
+        activeCard.setAttribute('aria-current', 'true');
+        previousCard?.classList.add('is-near');
+        nextCard?.classList.add('is-near');
+        focusedCards = [activeCard, previousCard, nextCard];
+
+        if (readoutIndex) readoutIndex.textContent = `Canvas ${activeCard.dataset.bannerIndex} / ${String(total).padStart(2, '0')}`;
+        if (readoutTitle) readoutTitle.textContent = activeCard.dataset.bannerTitle || '';
+        if (readoutSize) readoutSize.textContent = activeCard.dataset.bannerSize || '';
+      };
+      const scheduleBannerSync = () => {
+        if (!bannerSyncRaf) bannerSyncRaf = requestAnimationFrame(syncBannerStage);
+      };
+      bannerTrack.addEventListener('scroll', scheduleBannerSync, { passive: true });
+      window.addEventListener('resize', scheduleBannerSync, { passive: true });
+      syncBannerStage();
+    }
 
     // soft ratchet ticks while a shelf spins — one tick per ~150px travelled
     let railTickAcc = 0, railTickLast = 0;
