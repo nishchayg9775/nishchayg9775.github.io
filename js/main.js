@@ -1346,7 +1346,20 @@
   });
 
   /* ---------------- Complete archive — category rails ---------------- */
-  const GAL = window.NG_GALLERY || { categories: [], items: [] };
+  const gallerySource = window.NG_GALLERY || { categories: [], items: [] };
+  const sourceDecks = gallerySource.items.filter(item => item.cat === 'decks');
+  const featuredDeck = sourceDecks.find(item => item.id === 'decks-payomatix-brand-guide-2');
+  const closingDeck = sourceDecks.find(item => item.id === 'decks-oman-deck');
+  const orderedDecks = [
+    featuredDeck,
+    ...sourceDecks.filter(item => item !== featuredDeck && item !== closingDeck),
+    closingDeck
+  ].filter(Boolean);
+  let deckOrderIndex = 0;
+  const GAL = {
+    ...gallerySource,
+    items: gallerySource.items.map(item => item.cat === 'decks' ? orderedDecks[deckOrderIndex++] : item)
+  };
   const railsWrap = doc.querySelector('[data-gallery-rails]');
   const galCatLabel = Object.fromEntries(GAL.categories);
   const galList = GAL.items; // lightbox order = rail order (category-major)
