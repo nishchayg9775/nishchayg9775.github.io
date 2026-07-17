@@ -32,10 +32,10 @@ JPG_QUALITY = 80
 # folder name -> (key, label); order here = filter order on the site
 CATEGORIES = [
     ("1. New Work",                      ("new-work",   "New Work")),
-    ("2. New AI Ad Campaign",            ("ai-ads",     "AI Ad Campaigns")),
+    ("Social Media Posts",               ("social",     "Social Media Posts")),
     ("carousel",                         ("carousels",  "Carousels & Case Studies")),
     ("Decks",                            ("decks",      "Decks & Presentations")),
-    ("Social Media Posts",               ("social",     "Social Media Posts")),
+    ("2. New AI Ad Campaign",            ("ai-ads",     "AI Ad Campaigns")),
     ("Festivals or Important Days Posts",("festivals",  "Festival & Moment Posts")),
     ("YouTube Thumbnails",               ("thumbnails", "YouTube Thumbnails")),
     ("Flyers And Poster",                ("flyers",     "Flyers & Posters")),

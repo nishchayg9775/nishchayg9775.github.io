@@ -1534,9 +1534,9 @@
             const pageCount = it.pages ? it.pages.length : 1;
             const ratio = coverW / coverH;
             const previews = (it.previews || [it.thumb || it.cover, ...(it.pages || []).slice(1, 3)]).slice(0, 3);
-            const widthMax = Math.round(Math.min(ratio * 480, 720));
+            const widthMax = Math.round(Math.min(ratio * 306, 476));
             return `<button class="story-desk__project" type="button"
-              style="--story-ar: ${coverW} / ${coverH}; --story-width: clamp(280px, ${(ratio * 31).toFixed(2)}vw, ${widthMax}px)"
+              style="--story-ar: ${coverW} / ${coverH}; --story-width: clamp(196px, ${(ratio * 20).toFixed(2)}vw, ${widthMax}px)"
               data-story-project="${projectIndex}" data-story-id="${esc(it.id)}"
               aria-label="Open ${esc(it.title)} — ${pageCount} slides">
               <span class="story-desk__stack">
@@ -1599,10 +1599,10 @@
             ${items.map((it, index) => {
               const [src, w, h] = it.thumb || it.cover;
               const ratio = w / h;
-              const widthMax = Math.round(Math.min(ratio * 400, 680));
+              const widthMax = Math.round(Math.min(ratio * 300, 510));
               const pageCount = it.pages ? it.pages.length : 1;
               return `<button class="deck-room__deck" type="button"
-                style="--room-ar: ${w} / ${h}; --room-width: clamp(260px, ${(ratio * 30).toFixed(2)}vw, ${widthMax}px)"
+                style="--room-ar: ${w} / ${h}; --room-width: clamp(195px, ${(ratio * 22.5).toFixed(2)}vw, ${widthMax}px)"
                 data-deck-project="${index}" data-deck-id="${esc(it.id)}"
                 aria-label="Open ${esc(it.title)} — ${pageCount} slides">
                 <span class="deck-room__screen">
@@ -1956,7 +1956,7 @@
           <span class="mono-label ai-coverflow__eyebrow">AI ad campaigns · ${items.length} concepts</span>
           <h3 class="ai-coverflow__title" id="ai-coverflow-title">Parachute <em>visual worlds</em></h3>
         </div>
-        <p class="mono-label ai-coverflow__context">Coconut Oil · Spec Campaign · 2026</p>
+        <p class="ai-coverflow__context">Coconut Oil · Spec Campaign · 2026</p>
       </header>
       <div class="ai-coverflow__stage" role="group" aria-label="${esc(label)} — interactive coverflow">
         ${items.map((it, i) => {
