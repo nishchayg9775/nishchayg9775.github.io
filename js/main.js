@@ -1347,7 +1347,8 @@
 
   /* ---------------- Complete archive — category rails ---------------- */
   const gallerySource = window.NG_GALLERY || { categories: [], items: [] };
-  const sourceDecks = gallerySource.items.filter(item => item.cat === 'decks');
+  const visibleGalleryItems = gallerySource.items.filter(item => item.cat !== 'banners');
+  const sourceDecks = visibleGalleryItems.filter(item => item.cat === 'decks');
   const featuredDeck = sourceDecks.find(item => item.id === 'decks-payomatix-brand-guide-2');
   const closingDeck = sourceDecks.find(item => item.id === 'decks-oman-deck');
   const orderedDecks = [
@@ -1358,7 +1359,8 @@
   let deckOrderIndex = 0;
   const GAL = {
     ...gallerySource,
-    items: gallerySource.items.map(item => item.cat === 'decks' ? orderedDecks[deckOrderIndex++] : item)
+    categories: gallerySource.categories.filter(([key]) => key !== 'banners'),
+    items: visibleGalleryItems.map(item => item.cat === 'decks' ? orderedDecks[deckOrderIndex++] : item)
   };
   const railsWrap = doc.querySelector('[data-gallery-rails]');
   const galCatLabel = Object.fromEntries(GAL.categories);
@@ -1816,65 +1818,6 @@
       </div>
     </div>`;
 
-  const bannerCardHTML = (it, index, total) => {
-    const [src, w, h] = it.thumb || it.cover;
-    const [, fullW, fullH] = it.cover || it.thumb;
-    return `<button class="banner-browser" style="--banner-ar: ${w} / ${h}" data-gal-open="${esc(it.id)}"
-      data-banner-index="${String(index + 1).padStart(2, '0')}" data-banner-title="${esc(it.title)}"
-      data-banner-size="${fullW} × ${fullH}"
-      data-cursor-view="View" aria-label="View website banner: ${esc(it.title)}">
-      <span class="banner-browser__chrome" aria-hidden="true">
-        <span class="banner-browser__lights"><i></i><i></i><i></i></span>
-        <span class="banner-browser__address"><i>●</i> campaign.preview / ${String(index + 1).padStart(2, '0')}</span>
-        <span class="mono-label">${String(index + 1).padStart(2, '0')} / ${String(total).padStart(2, '0')}</span>
-      </span>
-      <span class="banner-browser__viewport">
-        <img src="${encodeURI(src)}" alt="${esc(it.title)} — ${esc(galCatLabel[it.cat] || '')}"
-          width="${w}" height="${h}" loading="lazy" decoding="async">
-        <span class="banner-browser__status" aria-hidden="true"><i></i></span>
-      </span>
-      <span class="banner-browser__meta">
-        <span>
-          <small class="mono-label">Live campaign canvas · ${fullW} × ${fullH}</small>
-          <strong>${esc(it.title)}</strong>
-        </span>
-        <span class="banner-browser__open" aria-hidden="true">Inspect ↗</span>
-      </span>
-    </button>`;
-  };
-
-  const bannerShowcaseHTML = (items, label) =>
-    `<div class="rail rail--banners" data-reveal>
-      <div class="rail__head archive-heading">
-        <div>
-          <span class="mono-label archive-heading__eyebrow">Responsive display lab · ${items.length} selected banners</span>
-          <h3 class="rail__title archive-heading__title">Website <em>banners</em></h3>
-        </div>
-        <div class="archive-heading__aside">
-          <p>Campaign canvases · previewed at their native proportions</p>
-          <div class="rail__nav">
-            <button class="rail__btn" data-rail-prev aria-label="Scroll ${esc(label)} back">←</button>
-            <button class="rail__btn" data-rail-next aria-label="Scroll ${esc(label)} forward">→</button>
-          </div>
-        </div>
-      </div>
-      <div class="banner-stage" data-banner-stage>
-        <div class="banner-stage__ruler" aria-hidden="true">
-          <span>320</span><i></i><span>768</span><i></i><span>1440</span><i></i><span>Fluid canvas</span>
-        </div>
-        <div class="rail__track banner-browser-strip" data-rail-track role="group" tabindex="0"
-          aria-roledescription="carousel" aria-label="${esc(label)} — ${items.length} pieces">
-          ${items.map((it, index) => bannerCardHTML(it, index, items.length)).join('')}
-        </div>
-        <div class="banner-stage__readout" aria-live="polite">
-          <span class="mono-label" data-banner-readout-index>Canvas 01 / ${String(items.length).padStart(2, '0')}</span>
-          <strong data-banner-readout-title>${esc(items[0]?.title || label)}</strong>
-          <span class="banner-stage__size" data-banner-readout-size>${items[0] ? `${items[0].cover?.[1] || items[0].thumb?.[1]} × ${items[0].cover?.[2] || items[0].thumb?.[2]}` : ''}</span>
-          <span class="mono-label banner-stage__hint">Drag · swipe · auto pilot</span>
-        </div>
-      </div>
-    </div>`;
-
   const flyerShowcaseHTML = (items, label) =>
     `<section class="rail rail--flyers flyer-slider" data-flyer-slider data-reveal aria-labelledby="flyer-slider-title">
       <header class="flyer-slider__head">
@@ -2047,7 +1990,6 @@
       if (key === 'social') return socialShowcaseHTML(items, label);
       if (key === 'festivals') return festivalShowcaseHTML(items, label);
       if (key === 'thumbnails') return thumbnailShowcaseHTML(items, label);
-      if (key === 'banners') return bannerShowcaseHTML(items, label);
       if (key === 'flyers') return flyerShowcaseHTML(items, label);
       if (key === 'interior') return interiorShowcaseHTML(items, label);
       return `
@@ -2999,7 +2941,7 @@
     // silent jump by an exact set-width lands on identical pixels, so the
     // rail can scroll forever in either direction
     const tracks = [...railsWrap.querySelectorAll('[data-rail-track]')];
-    const loopTracks = tracks.filter(track => track.closest('.rail--thumbnails, .rail--banners'));
+    const loopTracks = tracks.filter(track => track.closest('.rail--thumbnails'));
     const loopState = new Map();
     const setupRailLoop = track => {
       let st = loopState.get(track);
@@ -3045,60 +2987,6 @@
       track.addEventListener('scroll', () => recenterRail(track), { passive: true });
     });
 
-    // Keep one website-banner canvas in focus while adjacent canvases remain
-    // legible previews. Only three class names change as the rail moves, so
-    // drag and continuous autoplay stay lightweight.
-    const bannerStage = railsWrap.querySelector('[data-banner-stage]');
-    const bannerTrack = bannerStage && bannerStage.querySelector('[data-rail-track]');
-    if (bannerStage && bannerTrack) {
-      const readoutIndex = bannerStage.querySelector('[data-banner-readout-index]');
-      const readoutTitle = bannerStage.querySelector('[data-banner-readout-title]');
-      const readoutSize = bannerStage.querySelector('[data-banner-readout-size]');
-      const total = loopState.get(bannerTrack)?.originals.length || bannerTrack.children.length;
-      let focusedCards = [];
-      let bannerSyncRaf = null;
-
-      const syncBannerStage = () => {
-        bannerSyncRaf = null;
-        const centers = loopState.get(bannerTrack)?.centers;
-        if (!centers?.length) return;
-        const target = bannerTrack.scrollLeft + bannerTrack.clientWidth / 2;
-        let low = 0, high = centers.length - 1;
-        while (low < high) {
-          const mid = (low + high) >> 1;
-          if (centers[mid] < target) low = mid + 1;
-          else high = mid;
-        }
-        let activeIndex = low;
-        if (activeIndex > 0 && Math.abs(centers[activeIndex - 1] - target) < Math.abs(centers[activeIndex] - target)) activeIndex--;
-        const cards = bannerTrack.children;
-        const activeCard = cards[activeIndex];
-        if (!activeCard || focusedCards[0] === activeCard) return;
-
-        focusedCards.forEach(card => {
-          card?.classList.remove('is-active', 'is-near');
-          card?.removeAttribute('aria-current');
-        });
-        const previousCard = cards[activeIndex - 1];
-        const nextCard = cards[activeIndex + 1];
-        activeCard.classList.add('is-active');
-        activeCard.setAttribute('aria-current', 'true');
-        previousCard?.classList.add('is-near');
-        nextCard?.classList.add('is-near');
-        focusedCards = [activeCard, previousCard, nextCard];
-
-        if (readoutIndex) readoutIndex.textContent = `Canvas ${activeCard.dataset.bannerIndex} / ${String(total).padStart(2, '0')}`;
-        if (readoutTitle) readoutTitle.textContent = activeCard.dataset.bannerTitle || '';
-        if (readoutSize) readoutSize.textContent = activeCard.dataset.bannerSize || '';
-      };
-      const scheduleBannerSync = () => {
-        if (!bannerSyncRaf) bannerSyncRaf = requestAnimationFrame(syncBannerStage);
-      };
-      bannerTrack.addEventListener('scroll', scheduleBannerSync, { passive: true });
-      window.addEventListener('resize', scheduleBannerSync, { passive: true });
-      syncBannerStage();
-    }
-
     // soft ratchet ticks while a shelf spins — one tick per ~150px travelled
     let railTickAcc = 0, railTickLast = 0;
     const railLastSL = new Map();
@@ -3123,7 +3011,7 @@
       loopTracks.forEach(t => { setupRailLoop(t); recenterRail(t, true); });
     }, { passive: true });
 
-    // Continuous, seamless rails for the YouTube reel and website-banner lab.
+    // Continuous, seamless rail for the YouTube reel.
     // Pointer/touch/wheel input takes priority, then autoplay resumes promptly.
     const setupContinuousRailAuto = (railSelector, speed) => {
       const autoRail = railsWrap.querySelector(railSelector);
@@ -3215,13 +3103,12 @@
       });
     };
     setupContinuousRailAuto('.rail--thumbnails', 24);
-    setupContinuousRailAuto('.rail--banners', 24);
 
     // VK-fest style 3D coverflow — cards curve around the viewer, driven by
     // each rail's scroll position (center card flat & near, edges rotate away)
     if (!REDUCED) {
       const MAX_ANGLE = 34, NEAR_Z = 30, FAR_Z = -70;
-      const coverflowTracks = tracks.filter(track => !track.closest('.rail--festivals, .rail--thumbnails, .rail--banners'));
+      const coverflowTracks = tracks.filter(track => !track.closest('.rail--festivals, .rail--thumbnails'));
       const updateTrack = track => {
         const isSocial = Boolean(track.closest('.rail--social'));
         const cw = track.clientWidth;
