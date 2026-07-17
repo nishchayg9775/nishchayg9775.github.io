@@ -362,9 +362,9 @@
       this.w = this.canvas.width = Math.round(vw * this.dpr);
       this.h = this.canvas.height = Math.round(vh * this.dpr);
       // capped at 1000: the sim + per-particle draw was eating half the frame
-      // budget on integrated-GPU laptops, and Lenis scroll queues behind it
-      const ceiling = LOW_POWER ? 420 : 700;
-      const floor = LOW_POWER ? 260 : 420;
+      // budget on integrated-GPU laptops, and native scroll input queues behind it
+      const ceiling = LOW_POWER ? 320 : 520;
+      const floor = LOW_POWER ? 200 : 320;
       const count = Math.min(ceiling, Math.max(floor, Math.round((vw * vh) / 900)));
       this.pts = Array.from({ length: count }, () => ({
         x: (Math.random() - 0.5) * 3, y: (Math.random() - 0.5) * 3, z: (Math.random() - 0.5) * 3,
@@ -381,7 +381,7 @@
         this.pts.filter(p => p.hue >= 0.42 && p.hue < 0.74),
         this.pts.filter(p => p.hue >= 0.74)
       ];
-      this.stars = Array.from({ length: 80 }, () => ({
+      this.stars = Array.from({ length: 60 }, () => ({
         x: Math.random() * this.w, y: Math.random() * this.h,
         s: (0.5 + Math.random() * 1.2) * this.dpr, tw: Math.random() * 6.2832
       }));
@@ -1347,8 +1347,7 @@
 
   /* ---------------- Complete archive — category rails ---------------- */
   const gallerySource = window.NG_GALLERY || { categories: [], items: [] };
-  const visibleGalleryItems = gallerySource.items.filter(item => item.cat !== 'banners');
-  const sourceDecks = visibleGalleryItems.filter(item => item.cat === 'decks');
+  const sourceDecks = gallerySource.items.filter(item => item.cat === 'decks');
   const featuredDeck = sourceDecks.find(item => item.id === 'decks-payomatix-brand-guide-2');
   const closingDeck = sourceDecks.find(item => item.id === 'decks-oman-deck');
   const orderedDecks = [
@@ -1359,8 +1358,7 @@
   let deckOrderIndex = 0;
   const GAL = {
     ...gallerySource,
-    categories: gallerySource.categories.filter(([key]) => key !== 'banners'),
-    items: visibleGalleryItems.map(item => item.cat === 'decks' ? orderedDecks[deckOrderIndex++] : item)
+    items: gallerySource.items.map(item => item.cat === 'decks' ? orderedDecks[deckOrderIndex++] : item)
   };
   const railsWrap = doc.querySelector('[data-gallery-rails]');
   const galCatLabel = Object.fromEntries(GAL.categories);
@@ -3181,10 +3179,10 @@
     const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
     if (connection && (connection.saveData || /(^|-)2g$/.test(connection.effectiveType || ''))) return;
     const urls = [];
-    const categoryRows = GAL.categories.map(([key]) => GAL.items.filter(it => it.cat === key).slice(0, 8));
+    const categoryRows = GAL.categories.map(([key]) => GAL.items.filter(it => it.cat === key).slice(0, 4));
     // Round-robin keeps the first visible artwork of every section near the
     // front of the queue instead of finishing one category before the next.
-    for (let row = 0; row < 8; row++) {
+    for (let row = 0; row < 4; row++) {
       categoryRows.forEach(items => {
         const it = items[row];
         if (!it) return;
@@ -3206,7 +3204,21 @@
 
   if (railsWrap && GAL.items.length) {
     const schedule = window.requestIdleCallback || (cb => setTimeout(cb, 0));
-    schedule(() => { initGallery(); warmGalleryThumbs(); }, { timeout: 240 });
+    schedule(initGallery, { timeout: 240 });
+
+    const warmWhenNear = () => {
+      if (!('IntersectionObserver' in window)) {
+        warmGalleryThumbs();
+        return;
+      }
+      const observer = new IntersectionObserver(entries => {
+        if (!entries.some(entry => entry.isIntersecting)) return;
+        observer.disconnect();
+        warmGalleryThumbs();
+      }, { rootMargin: '1600px 0px' });
+      observer.observe(railsWrap);
+    };
+    schedule(warmWhenNear, { timeout: 1200 });
   }
 
   /* Lightbox — flat list of every page of every item in the current filter */
@@ -3438,20 +3450,20 @@
     const bar = doc.querySelector('[data-preloader-bar]');
     const letters = doc.querySelectorAll('[data-preloader-word] span');
     const state = { v: 0 };
-    const minTime = new Promise(res => setTimeout(res, 420));
-    // window load can take 30s+ with a 583-image gallery; never hold the
-    // door longer than 3.5s — lazy images keep loading behind the intro
+    const minTime = new Promise(res => setTimeout(res, 160));
+    // Never hold the first visit on slower image loading; the gallery stays lazy.
+
     const loaded = Promise.race([
       new Promise(res => {
         if (doc.readyState !== 'loading') res();
         else doc.addEventListener('DOMContentLoaded', res, { once: true });
       }),
-      new Promise(res => setTimeout(res, 900))
+      new Promise(res => setTimeout(res, 500))
     ]);
 
-    gsap.fromTo(letters, { yPercent: 120 }, { yPercent: 0, duration: 0.85, stagger: 0.055, ease: 'power4.out' });
+    gsap.fromTo(letters, { yPercent: 120 }, { yPercent: 0, duration: 0.38, stagger: 0.018, ease: 'power4.out' });
     gsap.to(state, {
-      v: 100, duration: 0.52, ease: 'power2.inOut',
+      v: 100, duration: 0.32, ease: 'power2.inOut',
       onUpdate: () => {
         count.textContent = String(Math.round(state.v)).padStart(2, '0');
         bar.style.transform = `scaleX(${state.v / 100})`;
@@ -3465,11 +3477,11 @@
       const out = gsap.timeline({
         onComplete: () => preloader.remove()
       });
-      out.to(letters, { yPercent: -120, duration: 0.32, stagger: 0.018, ease: 'power3.in' })
-        .to('.preloader__meta, .preloader__bar', { opacity: 0, duration: 0.18 }, '<0.08')
-        .to(preloader, { clipPath: 'inset(0 0 100% 0)', duration: 0.48, ease: 'power4.inOut' }, '-=0.1')
-        // unlock the moment the wipe starts, not after it ends — while Lenis
-        // is stopped every wheel/touchpad event is swallowed, which read as
+      out.to(letters, { yPercent: -120, duration: 0.22, stagger: 0.008, ease: 'power3.in' })
+        .to('.preloader__meta, .preloader__bar', { opacity: 0, duration: 0.12 }, '<0.08')
+        .to(preloader, { clipPath: 'inset(0 0 100% 0)', duration: 0.34, ease: 'power4.inOut' }, '-=0.1')
+        // unlock the moment the wipe starts, not after it ends — while scroll
+        // is locked every wheel/touchpad event is swallowed, which read as
         // seconds of dead scroll input right after load
         .add(() => lockScroll(false), '<')
         .add(startIntro, '-=0.34');

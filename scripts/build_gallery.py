@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 """
 Scans Test/Portfolio, converts PDFs (all pages) and HEIC to web JPGs in
-Test/assets/gallery/, and emits Test/js/gallery-data.js listing EVERY item
-category-wise. Idempotent: skips already-rendered pages.
+Test/assets/gallery/, and emits Test/js/gallery-data.js listing every item
+category-wise. Current outputs are reused, changed sources are refreshed, and
+stale generated assets are pruned.
 """
 import json
 import re
@@ -37,7 +38,6 @@ CATEGORIES = [
     ("Social Media Posts",               ("social",     "Social Media Posts")),
     ("Festivals or Important Days Posts",("festivals",  "Festival & Moment Posts")),
     ("YouTube Thumbnails",               ("thumbnails", "YouTube Thumbnails")),
-    ("Website Banners",                  ("banners",    "Website Banners")),
     ("Flyers And Poster",                ("flyers",     "Flyers & Posters")),
     ("3. Interior And Real-estate",      ("interior",   "Interior & Real Estate")),
 ]
@@ -85,6 +85,11 @@ THUMB_TARGET = 640   # rail cards render near 320px; enough for 2x DPR
 THUMB_QUALITY = 72
 
 
+def output_is_current(src: pathlib.Path, dst: pathlib.Path) -> bool:
+    """Return True only when a generated file is at least as new as its source."""
+    return dst.exists() and dst.stat().st_mtime_ns >= src.stat().st_mtime_ns
+
+
 def flatten_rgb(im: Image.Image) -> Image.Image:
     if im.mode in ("RGBA", "LA", "P"):
         bg = Image.new("RGB", im.size, (255, 255, 255))
@@ -105,7 +110,7 @@ def make_thumb(src: pathlib.Path, item_id: str):
     tdir = OUT / "thumb"
     tdir.mkdir(parents=True, exist_ok=True)
     dst = tdir / f"{item_id}.jpg"
-    if not dst.exists():
+    if not output_is_current(src, dst):
         with Image.open(src) as im:
             im = ImageOps.exif_transpose(im)
             im.thumbnail((THUMB_TARGET, THUMB_TARGET), Image.LANCZOS)
@@ -126,12 +131,12 @@ def publish_image(src: pathlib.Path, item_id: str):
     # GIFs keep animation; small files keep original bytes and format
     if src.suffix.lower() == ".gif" or (max(w, h) <= OPT_MAX_DIM and mb <= OPT_MAX_MB):
         dst = img_dir / f"{item_id}{src.suffix.lower()}"
-        if not dst.exists():
+        if not output_is_current(src, dst):
             dst.write_bytes(src.read_bytes())
         return dst, w, h
 
     dst = img_dir / f"{item_id}.jpg"
-    if not dst.exists():
+    if not output_is_current(src, dst):
         with Image.open(src) as im:
             im = ImageOps.exif_transpose(im)
             im.thumbnail((OPT_TARGET, OPT_TARGET), Image.LANCZOS)
@@ -148,8 +153,9 @@ def publish_image(src: pathlib.Path, item_id: str):
 
 
 def convert_heic(src: pathlib.Path, dst: pathlib.Path):
-    if dst.exists():
+    if output_is_current(src, dst):
         return
+    dst.parent.mkdir(parents=True, exist_ok=True)
     with Image.open(src) as im:
         im = ImageOps.exif_transpose(im)
         if max(im.size) > 2000:
@@ -158,13 +164,13 @@ def convert_heic(src: pathlib.Path, dst: pathlib.Path):
 
 
 def render_pdf(src: pathlib.Path, out_dir: pathlib.Path):
-    """Render every page; returns list of (path, w, h). Skips existing files."""
+    """Render every page; reuse current output and refresh changed sources."""
     out_dir.mkdir(parents=True, exist_ok=True)
     pages = []
     with fitz.open(src) as docu:
         for i, page in enumerate(docu):
             dst = out_dir / f"p{i + 1:02d}.jpg"
-            if dst.exists():
+            if output_is_current(src, dst):
                 w, h = img_dims(dst)
                 pages.append((dst, w, h))
                 continue
@@ -177,16 +183,69 @@ def render_pdf(src: pathlib.Path, out_dir: pathlib.Path):
     return pages
 
 
+def prune_stale_outputs(items):
+    """Remove generated gallery files that are no longer referenced.
+
+    The entire assets/gallery directory is build output. Pruning it after a
+    successful scan prevents deleted or renamed Portfolio sources from leaving
+    unused full-size images, thumbnails, or PDF page folders in deployments.
+    """
+    referenced = set()
+    for item in items:
+        for field in ("cover", "thumb"):
+            asset = item.get(field)
+            if asset:
+                referenced.add((ROOT / asset[0]).resolve())
+        for field in ("pages", "previews"):
+            for asset in item.get(field, []):
+                referenced.add((ROOT / asset[0]).resolve())
+
+    removed_files = 0
+    removed_bytes = 0
+    for path in OUT.rglob("*"):
+        if not path.is_file() or path.resolve() in referenced:
+            continue
+        removed_bytes += path.stat().st_size
+        path.unlink()
+        removed_files += 1
+
+    removed_dirs = 0
+    directories = sorted(
+        (path for path in OUT.rglob("*") if path.is_dir()),
+        key=lambda path: len(path.parts),
+        reverse=True,
+    )
+    for path in directories:
+        if any(path.iterdir()):
+            continue
+        path.rmdir()
+        removed_dirs += 1
+
+    if removed_files or removed_dirs:
+        print(
+            f"pruned stale gallery output: {removed_files} files "
+            f"({removed_bytes / 1048576:.1f}MB), {removed_dirs} empty folders",
+            flush=True,
+        )
+
+
 def main():
+    missing_folders = [
+        folder for folder, _ in CATEGORIES if not (PORT / folder).is_dir()
+    ]
+    if missing_folders:
+        details = "\n".join(f"  - {folder}" for folder in missing_folders)
+        raise SystemExit(
+            "Missing required Portfolio folders; build aborted before pruning:\n"
+            + details
+        )
+
     items = []
     skipped = []
     seen_ids = set()
 
     for folder, (key, label) in CATEGORIES:
         cat_dir = PORT / folder
-        if not cat_dir.is_dir():
-            print(f"!! missing folder: {folder}", file=sys.stderr)
-            continue
         files = sorted(
             (f for f in cat_dir.rglob("*") if f.is_file()),
             key=lambda f: f.name.lower(),
@@ -214,7 +273,7 @@ def main():
                     item["thumb"] = thumb
                 items.append(item)
             elif ext == ".heic":
-                dst = OUT / f"{item_id}.jpg"
+                dst = OUT / "img" / f"{item_id}.jpg"
                 convert_heic(f, dst)
                 w, h = img_dims(dst)
                 item = {
@@ -260,7 +319,11 @@ def main():
         + json.dumps(data, ensure_ascii=False, separators=(",", ":"))
         + ";\n"
     )
-    (ROOT / "js" / "gallery-data.js").write_text(js, encoding="utf-8")
+    manifest = ROOT / "js" / "gallery-data.js"
+    manifest_tmp = manifest.with_suffix(".js.tmp")
+    manifest_tmp.write_text(js, encoding="utf-8")
+    manifest_tmp.replace(manifest)
+    prune_stale_outputs(items)
 
     total_pages = sum(len(i.get("pages", [])) for i in items)
     print("\n=== SUMMARY ===")

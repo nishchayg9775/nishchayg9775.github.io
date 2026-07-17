@@ -1,40 +1,54 @@
 # Nishchay Gupta — Portfolio
 
-Static single-page portfolio. No framework, no build step: plain HTML/CSS/JS with GSAP + Lenis (vendored in `js/vendor/`).
+Static single-page portfolio built with plain HTML, CSS and JavaScript. GSAP and ScrollTrigger are self-hosted; there is no frontend build step.
 
 ## Run locally
 
+```powershell
+npm run serve
 ```
-python -m http.server 4173
-```
 
-or `npm run serve`, then open http://localhost:4173.
+Then open <http://localhost:4173>.
 
-## Structure
+## Project structure
 
-- `index.html` — the whole site
-- `css/styles.css` — all styling (dark/light themes)
-- `js/main.js` — animations, gallery rails, lightbox, case studies, deep links
-- `js/data.js` — featured case-study content (hand-edited)
-- `js/gallery-data.js` — AUTO-GENERATED, do not edit by hand
-- `assets/` — everything the deployed site needs (fonts, gallery images, resume)
-- `Portfolio/` — raw design originals (NOT deployed, NOT in git)
-- `scripts/build_gallery.py` — scans `Portfolio/`, writes optimized web copies
-  into `assets/gallery/` and regenerates `js/gallery-data.js`
-- `scripts/check_assets.py` — pre-deploy check: all referenced files exist,
-  nothing points at `Portfolio/`
+- `index.html` — page structure and content
+- `css/styles.css` — global tokens, responsive layouts and component styles
+- `js/main.js` — interactions, animation, gallery rails, lightbox and deep links
+- `js/data.js` — hand-edited featured case-study content
+- `js/gallery-data.js` — generated gallery manifest; do not edit by hand
+- `js/vendor/` — pinned GSAP and ScrollTrigger browser bundles
+- `assets/fonts/` — self-hosted WOFF2 fonts
+- `assets/profile/` — hero and About portraits
+- `assets/work/` — curated case-study imagery
+- `assets/gallery/` — generated, optimized gallery images and thumbnails
+- `assets/Nishchay_Gupta_Resume.pdf` — downloadable résumé
+- `Portfolio/` — optional local raw source tree; Git-ignored and absent from this deployment copy
+- `scripts/build_gallery.py` — refreshes optimized gallery output and removes stale files
+- `scripts/check_assets.py` — checks missing references, raw-source leaks and deploy orphans
+- `requirements.txt` — Python dependencies for gallery maintenance
 
 ## Updating the gallery
 
-1. Add/remove files in `Portfolio/<category>/`
-2. `npm run build:gallery` (needs Python with PyMuPDF, Pillow, pillow-heif)
-3. `npm run check`
-4. Hard-refresh the browser
+Install the gallery tooling once:
+
+```powershell
+python -m pip install -r requirements.txt
+```
+
+Then:
+
+1. Restore or create the local `Portfolio/` source tree with the expected category folders.
+2. Add, replace or remove the raw portfolio files.
+3. Run `npm run build:gallery`.
+4. Run `npm run check`.
+5. Update the `gallery-data.js` query version in `index.html` when deploying.
+
+The gallery builder is an optional maintenance tool. It requires a local `Portfolio/` source tree, refreshes changed outputs, regenerates the data manifest and prunes generated images that are no longer referenced.
 
 ## Deploying
 
-Upload everything except `Portfolio/` and `scripts/` (~130 MB, dominated by
-`assets/gallery/`). Any static host works. Run `npm run check` first.
+GitHub Pages serves the tracked files directly from the repository. The raw `Portfolio/` source tree is not included; runtime code only uses optimized files under `assets/`. Always run `npm run check` before publishing.
 
 ## Deep links
 
