@@ -7346,6 +7346,35 @@ main > section[id] { scroll-margin-top: 82px; }
   .menu-btn { display: block; }
 }
 
+@media (min-width: 761px) and (max-width: 860px) {
+  .s-gallery .new-work-reel__board,
+  .s-gallery .story-desk__board,
+  .s-gallery .deck-room__workspace {
+    grid-template-columns: minmax(0, 1fr);
+    min-height: 0;
+  }
+  .s-gallery .new-work-reel__stage,
+  .s-gallery .story-desk__stage,
+  .s-gallery .deck-room__stage { min-height: 430px; }
+  .s-gallery .story-desk__project { width: min(var(--story-width), 72vw); }
+
+  .s-gallery .rail__btn,
+  .s-gallery .new-work-reel__nav > button,
+  .s-gallery .story-desk__actions > div button,
+  .s-gallery .deck-room__toolbar button {
+    width: 44px;
+    min-width: 44px;
+    height: 44px;
+    min-height: 44px;
+  }
+  .s-gallery .story-desk__index button,
+  .s-gallery .flyer-slider__indices button,
+  .s-gallery .interior-dossier__step button {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+
 @media (max-width: 760px) {
   :root {
     --type-body-size: .875rem;

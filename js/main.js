@@ -3384,7 +3384,7 @@
       const obj = { v: 0 };
       gsap.to(obj, {
         v: target, duration: 1.6, ease: 'power2.out',
-        scrollTrigger: { trigger: el, start: 'top 92%', once: true },
+        scrollTrigger: { trigger: el, start: 'top bottom', once: true },
         onUpdate: () => { el.childNodes[0].nodeValue = Math.round(obj.v); }
       });
     });
