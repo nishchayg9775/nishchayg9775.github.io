@@ -14,6 +14,8 @@ import fitz  # PyMuPDF
 from PIL import Image, ImageOps
 import pillow_heif
 
+from polish_titles import polish_title
+
 # Windows consoles default to cp1252; portfolio filenames include Devanagari
 sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 sys.stderr.reconfigure(encoding="utf-8", errors="replace")
@@ -253,7 +255,6 @@ def main():
         print(f"[{label}] {len(files)} files", flush=True)
         for f in files:
             ext = f.suffix.lower()
-            title = clean_title(f.stem)
             base_id = f"{key}-{slugify(f.stem)}"
             item_id = base_id
             n = 2
@@ -261,6 +262,7 @@ def main():
                 item_id = f"{base_id}-{n}"
                 n += 1
             seen_ids.add(item_id)
+            title = polish_title(item_id, clean_title(f.stem))
 
             if ext in IMG_EXT:
                 src, w, h = publish_image(f, item_id)

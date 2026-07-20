@@ -1519,6 +1519,12 @@ html.no-motion .swi { transform: none !important; }
 [data-theme='light'] .new-work-reel__frame { box-shadow: 0 22px 52px rgba(25, 31, 48, .2); }
 [data-theme='light'] .new-work-reel__card[data-position='0']:hover .new-work-reel__frame,
 [data-theme='light'] .new-work-reel__card[data-position='0']:focus-visible .new-work-reel__frame { box-shadow: 0 28px 64px rgba(25, 31, 48, .25), 0 0 28px var(--accent-soft); }
+/* on the light canvas low opacity reads as washout, not depth — keep side
+   cards more present and let scale/saturation carry the hierarchy */
+[data-theme='light'] .new-work-reel__card[data-position='-1'],
+[data-theme='light'] .new-work-reel__card[data-position='1'] { opacity: .8; filter: saturate(.85); }
+[data-theme='light'] .new-work-reel__card[data-position='-2'],
+[data-theme='light'] .new-work-reel__card[data-position='2'] { opacity: .42; filter: saturate(.7); }
 
 @media (max-width: 860px) {
   .new-work-reel__head { grid-template-columns: 1fr; gap: 18px; }
@@ -3643,7 +3649,7 @@ html.no-motion .swi { transform: none !important; }
   box-shadow: 0 34px 70px rgba(22, 29, 48, 0.25), 0 0 30px var(--accent-soft);
 }
 @media (max-width: 640px) {
-  .rail--flyers { min-height: 620px; padding-top: 8px; }
+  .rail--flyers { min-height: 0; padding-top: 8px; }
   .flyer-slider__head { align-items: flex-start; }
   .flyer-slider__title { font-size: clamp(2.3rem, 13vw, 3.6rem); }
   .flyer-slider__active { display: none; }
@@ -4725,6 +4731,14 @@ html.sfx-off .sound-toggle__mute { display: block; }
   color: var(--text-2);
   white-space: nowrap;
 }
+/* collapsed columns are narrow — ellipsize the output label instead of
+   letting the trigger's overflow:hidden slice through mid-letter */
+.process-board.is-enhanced .process-stage:not(.is-active) .process-stage__output {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 .process-stage__mark {
   position: absolute;
   right: clamp(18px, 2vw, 30px);
@@ -4897,9 +4911,13 @@ html.sfx-off .sound-toggle__mute { display: block; }
 }
 .skill-module li i { font-family: var(--font-mono); font-size: .48rem; font-style: normal; letter-spacing: .08em; color: var(--text-3); }
 .skill-module:hover li, .skill-module.is-active li { color: var(--text); border-color: var(--line-strong); }
-.skill-module:hover li:nth-child(2), .skill-module.is-active li:nth-child(2) { transform: translateX(5px); }
-.skill-module:hover li:nth-child(3), .skill-module.is-active li:nth-child(3) { transform: translateX(10px); }
-.skill-module:hover li:nth-child(4), .skill-module.is-active li:nth-child(4) { transform: translateX(15px); }
+/* staircase shift is a pointer flourish; on touch .is-active is permanent
+   and the offset reads as a layout mistake, so keep it hover-only */
+@media (hover: hover) and (pointer: fine) {
+  .skill-module:hover li:nth-child(2), .skill-module.is-active li:nth-child(2) { transform: translateX(5px); }
+  .skill-module:hover li:nth-child(3), .skill-module.is-active li:nth-child(3) { transform: translateX(10px); }
+  .skill-module:hover li:nth-child(4), .skill-module.is-active li:nth-child(4) { transform: translateX(15px); }
+}
 .skill-atlas__core {
   position: absolute;
   left: 50%; top: 50%;
@@ -7287,7 +7305,7 @@ html.no-motion [data-reveal] { opacity: 1; transform: none; }
     flex-basis: 260px;
   }
   .s-gallery .rail--flyers {
-    min-height: 520px;
+    min-height: 0;
   }
   .s-gallery .flyer-slider__stage {
     height: 330px;

@@ -689,7 +689,9 @@
 
         <footer class="featured-dossier__footer">
           <span class="featured-dossier__progress" aria-hidden="true"><i data-featured-progress></i></span>
-          <p>Choose a case file · swipe or use the touchpad · open for the full problem-to-outcome story</p>
+          <p>${FINE_POINTER
+            ? 'Choose a case file · swipe or use the touchpad · open for the full problem-to-outcome story'
+            : 'Choose a case file · swipe to browse · tap to open the full story'}</p>
         </footer>
       </section>`;
 
@@ -1462,7 +1464,7 @@
           aria-label="${esc(label)} — interactive artwork carousel">
           <span class="new-work-reel__axis" aria-hidden="true"></span>
           <span class="mono-label new-work-reel__coordinate new-work-reel__coordinate--top" aria-hidden="true">CURATED / 2026</span>
-          <span class="mono-label new-work-reel__coordinate new-work-reel__coordinate--side" aria-hidden="true">DRAG · SWIPE · TRACKPAD</span>
+          <span class="mono-label new-work-reel__coordinate new-work-reel__coordinate--side" aria-hidden="true">${FINE_POINTER ? 'DRAG · SWIPE · TRACKPAD' : 'DRAG · SWIPE'}</span>
           ${items.map((it, index) => {
             const [src, w, h] = it.thumb || it.cover;
             return `<button class="new-work-reel__card" type="button" style="--new-work-ar: ${w} / ${h}"
@@ -1849,7 +1851,9 @@
           ${items.map((it, index) => `<button data-flyer-go="${index}" aria-label="Show artwork ${index + 1}: ${esc(it.title)}">${index + 1}</button>`).join('')}
         </div>
       </footer>
-      <p class="flyer-slider__hint">Select a side piece to bring it forward · open the centre artwork for full view</p>
+      <p class="flyer-slider__hint">${FINE_POINTER
+        ? 'Select a side piece to bring it forward · open the centre artwork for full view'
+        : 'Swipe to browse · tap the centre artwork for full view'}</p>
     </section>`;
 
   const interiorShowcaseHTML = (items, label) => {
@@ -1944,7 +1948,9 @@
             </button>`;
           }).join('')}
         </div>
-        <p>Choose a frame · swipe or use the touchpad · open the centre piece for full view</p>
+        <p>${FINE_POINTER
+          ? 'Choose a frame · swipe or use the touchpad · open the centre piece for full view'
+          : 'Swipe to browse frames · tap the centre piece for full view'}</p>
       </footer>
     </section>`;
   };
