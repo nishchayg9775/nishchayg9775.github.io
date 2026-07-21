@@ -7146,7 +7146,12 @@ html.no-motion [data-reveal] { opacity: 1; transform: none; }
 .s-gallery .rail--social .rail__track {
   gap: clamp(14px, 1.7vw, 22px);
   padding-top: 20px;
-  padding-bottom: 28px;
+  /* The centre tile is pushed +72px toward a 1400px perspective, so it
+     paints ~7px above and ~11px below its padding box. With 28px here the
+     gap under the cards measured 17px against 35px above them — the head's
+     22px margin stacks on top of the padding, the overshoot only eats into
+     it. 46px puts both gaps at 35px. */
+  padding-bottom: 46px;
 }
 .s-gallery .social-tile__top {
   height: 34px;
