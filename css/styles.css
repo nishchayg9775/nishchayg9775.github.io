@@ -6982,11 +6982,17 @@ html.no-motion [data-reveal] { opacity: 1; transform: none; }
   padding: 4px 0 0;
 }
 .s-gallery .ai-coverflow__title { margin-top: 0; }
+/* The centre card is scaled 1.03 AND pushed 120px toward a 1200px
+   perspective, so it paints ~14% larger than it lays out: 235x343 becomes
+   235x392. The stage was 380px and .rail--ai-ads clips overflow, which
+   sheared the bottom border and corners off the active card. Height fits
+   the painted size; top re-centres the card inside it. */
 .s-gallery .ai-coverflow__stage {
-  height: 380px;
+  height: 408px;
   margin-top: 0;
 }
 .s-gallery .ai-coverflow__card {
+  top: 32px;
   width: clamp(195px, 18vw, 235px);
   padding: 5px;
   border-radius: 23px;
