@@ -6758,8 +6758,22 @@ html.no-motion [data-reveal] { opacity: 1; transform: none; }
 .s-featured .featured-dossier__stats strong {
   font-size: clamp(.85rem, 1.05vw, 1.05rem);
 }
+/* The stage carries the 405px card AND the caption pinned to its floor.
+   At 500px only 35px was left for both gaps, so it all went above the card
+   and the caption ended up 2px off the artwork. 540px divides evenly:
+   ~30px above the card, ~30px between card and caption, ~30px below it.
+   Artwork size is unchanged. */
 .s-featured .featured-dossier__stage {
-  min-height: 500px;
+  /* tracks the artwork: card + caption(46) + three ~30px gaps, so the rhythm
+     holds as the frame scales with the viewport instead of only at 1440 */
+  min-height: calc(clamp(310px, 31vw, 405px) + 136px);
+}
+.s-featured .featured-dossier__card {
+  /* Centre in the region ABOVE the caption, not in the whole stage: the
+     caption plus its 30px floor margin is 76px, so shift the centre up 38px.
+     Keeps the space above the card equal to the gap below it at any stage
+     height — the stage stretches when the sibling text columns are taller. */
+  top: calc(50% - 38px);
 }
 .s-featured .featured-dossier__frame {
   height: clamp(310px, 31vw, 405px);
@@ -6771,7 +6785,7 @@ html.no-motion [data-reveal] { opacity: 1; transform: none; }
   transform: translate(-50%, -50%) translate(125px, -58px) scale(.59) rotate(1.5deg);
 }
 .s-featured .featured-dossier__caption {
-  bottom: 14px;
+  bottom: 30px;
   padding-top: 8px;
 }
 .s-featured .featured-dossier__preview {
