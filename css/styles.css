@@ -7667,14 +7667,26 @@ main > section[id] { scroll-margin-top: 82px; }
   .featured-dossier__brief dd { letter-spacing: normal; }
 
   /* ---------- Compact gallery: the shelf ---------- */
+  /* One grid for the whole shelf so the eyebrow, the counter and the All-NN
+     control share a single 44px row instead of costing a separate 56px footer
+     nine times over. Chrome was 37% of every shelf's height. */
   .shelf {
     display: grid;
-    gap: 12px;
-    padding-block: clamp(20px, 4vw, 30px);
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    gap: 8px 10px;
+    padding-block: 14px;
     border-top: 1px solid var(--line);
   }
   .shelf:first-child { border-top: 0; }
-  .shelf__head { display: grid; gap: 7px; }
+  .shelf__head,
+  .shelf__foot { display: contents; }
+  .shelf__eyebrow { grid-area: 1 / 1; align-self: center; }
+  .shelf__count { grid-area: 1 / 2; align-self: center; }
+  .shelf__all { grid-area: 1 / 3; align-self: center; }
+  .shelf__title { grid-area: 2 / 1 / 3 / -1; }
+  .shelf__track { grid-area: 3 / 1 / 4 / -1; }
+  /* the counter already says which frame you are on — the bar was a duplicate */
+  .shelf__bar { display: none; }
   .shelf__eyebrow { color: var(--accent); }
   .shelf__title {
     font-family: var(--font-sans);
@@ -7731,16 +7743,11 @@ main > section[id] { scroll-margin-top: 82px; }
   }
   /* contain, never cover — the archive shows work uncropped */
   .shelf-card img { width: 100%; height: 100%; object-fit: contain; }
-  .shelf-card__cap {
-    position: absolute;
-    inset-inline: 0;
-    bottom: 0;
-    padding: 24px 12px 10px;
-    color: #f2f4f8;
-    font-size: var(--type-caption-size);
-    line-height: 1.3;
-    background: linear-gradient(transparent, rgba(0, 0, 0, .85));
-  }
+  /* 651 of the page's 1,850 words were these captions, and they are filename
+     stems from build_gallery.py rather than anything he wrote. They also
+     darkened the bottom sixth of all 165 frames. The title still reaches
+     assistive tech via the button's aria-label, and the lightbox prints it. */
+  .shelf-card__cap { display: none; }
   .shelf-card__pages {
     position: absolute;
     top: 9px;
@@ -7751,21 +7758,7 @@ main > section[id] { scroll-margin-top: 82px; }
     color: var(--text);
     backdrop-filter: blur(6px);
   }
-  .shelf__foot {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    padding-top: 11px;
-    border-top: 1px solid var(--line);
-  }
-  .shelf__bar { flex: 1; height: 1px; background: var(--line); }
-  .shelf__bar i {
-    display: block;
-    height: 100%;
-    background: var(--accent);
-    transform-origin: left;
-    transition: transform 240ms var(--ease-out);
-  }
+  .shelf__count { white-space: nowrap; }
   .shelf__count b { color: var(--text); }
   .shelf__all {
     min-height: 44px;
@@ -7800,8 +7793,10 @@ main > section[id] { scroll-margin-top: 82px; }
   }
   .shelf.is-expanded .shelf-card__cap,
   .shelf.is-expanded .shelf-card__pages { display: none; }
-  .shelf.is-expanded .shelf__bar,
   .shelf.is-expanded .shelf__count { display: none; }
+  /* the 1px shelf border does the dividing; 28-80px of air on top of it
+     just pushed the next category further down a very long page */
+  .s-gallery .s-gallery__rails { gap: 14px; }
 
   /* ---------- Chrome kill-list ----------
      Every one of these is a desktop density device: a tab strip, a
@@ -7842,16 +7837,27 @@ main > section[id] { scroll-margin-top: 82px; }
   .about-dossier.is-enhanced .about-chapter:first-of-type { border-top: 0; }
   .s-about__portrait-frame { width: 100%; max-width: none; }
 
-  /* Work — the artwork is the point; give it the full column.
-     Prefixed to out-rank the .s-featured compact block above. */
+  /* Work — all four case files stack, each one tappable straight into its own
+     case study. The desktop coverflow needs its tab strip to switch cases, and
+     the tab strip is chrome we drop down here — so hiding the inactive cards
+     as well would strand three of the four clients with no way to reach them. */
   .s-featured .featured-dossier__board { display: block; }
-  .s-featured .featured-dossier__stage { display: block; min-height: 0; }
-  .s-featured .featured-dossier__card:not([data-position='0']) { display: none; }
-  .s-featured .featured-dossier__card[data-position='0'] {
+  .s-featured .featured-dossier__stage {
+    display: grid;
+    gap: 14px;
+    min-height: 0;
+  }
+  .s-featured .featured-dossier__card {
     position: static;
     width: 100%;
     transform: none;
     opacity: 1;
+    filter: none;
+    visibility: visible;
+    pointer-events: auto;
+    display: grid;
+    gap: 9px;
+    text-align: left;
   }
   .s-featured .featured-dossier__frame {
     width: 100%;
@@ -7859,7 +7865,18 @@ main > section[id] { scroll-margin-top: 82px; }
     height: auto;
     aspect-ratio: var(--featured-ar, 4 / 3);
   }
-  .featured-dossier__open { min-height: 44px; }
+  .featured-dossier__cardcap { display: grid; gap: 3px; }
+  .featured-dossier__cardcap strong {
+    font-size: var(--type-title-md-size);
+    font-weight: 680;
+    line-height: 1.2;
+  }
+  /* the brief and preview panels describe whichever single case was active —
+     meaningless once all four are on screen; the full detail is one tap away */
+  .s-featured .featured-dossier__brief,
+  .s-featured .featured-dossier__preview,
+  .s-featured .featured-dossier__caption,
+  .s-featured .featured-dossier__footer { display: none; }
 
   /* Services — four open rows, no console pane, no toggle */
   .services-console { display: block; min-height: 0; }
@@ -7895,9 +7912,12 @@ main > section[id] { scroll-margin-top: 82px; }
     opacity: 1;
     transform: none;
   }
-  .process-stage__trigger { min-height: 0; }
+  .process-stage__trigger { min-height: 0; padding-block: 14px; }
 
-  /* Skills — all sixteen tools visible, no accordion */
+  /* Skills — all sixteen tools visible, no accordion. The "active lens" pane
+     reprints module 01's heading and copy, which is useful when only one
+     module is open and pure duplication once all four are. */
+  .s-skills .skill-atlas__active { display: none; }
   .s-skills .skill-atlas__matrix { grid-template-columns: minmax(0, 1fr); }
   .s-skills .skill-module ul,
   .s-skills .skill-module.is-active ul {
@@ -7925,6 +7945,7 @@ main > section[id] { scroll-margin-top: 82px; }
   .voices-stage.is-enhanced .voice {
     grid-area: auto;
     min-height: 0;
+    padding-block: 16px 20px;
     opacity: 1;
     visibility: visible;
     transform: none;

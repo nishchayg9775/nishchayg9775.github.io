@@ -12,6 +12,11 @@
   const LOW_POWER = !FINE_POINTER ||
     Number(navigator.deviceMemory || 8) <= 4 ||
     Number(navigator.hardwareConcurrency || 8) <= 4;
+  // Phone + tablet render simpler markup than the desktop showpiece. Read once
+  // at boot: the renderers below install listeners with no teardown path, so
+  // re-rendering on a resize would double-bind them. Declared here, not beside
+  // the gallery, because the featured renderer runs long before that point.
+  const COMPACT = window.matchMedia('(max-width: 1100px)').matches;
   const DATA = window.NG_DATA || { projects: [] };
 
   if (REDUCED) root.classList.add('no-motion');
@@ -668,11 +673,17 @@
             <span class="featured-dossier__coordinate featured-dossier__coordinate--top mono-label" aria-hidden="true">CASE FILE / 2026</span>
             <span class="featured-dossier__coordinate featured-dossier__coordinate--side mono-label" aria-hidden="true">STRATEGY → SYSTEM → RESULT</span>
             ${featured.map((p, i) => `<button class="featured-dossier__card" data-featured-card="${i}" data-featured-id="${esc(p.id)}"
-              style="--featured-ar: ${p.card.w} / ${p.card.h}" aria-label="Select ${esc(p.title)}">
+              ${COMPACT ? `data-case-open="${esc(p.id)}"` : ''}
+              style="--featured-ar: ${p.card.w} / ${p.card.h}"
+              aria-label="${COMPACT ? `Open case study: ${esc(p.title)}` : `Select ${esc(p.title)}`}">
               <span class="featured-dossier__frame">
                 ${imgTag(p.card.img, `${p.title} — ${p.client}`, p.card.w, p.card.h)}
                 <span class="featured-dossier__folio mono-label" aria-hidden="true">0${i + 1}</span>
               </span>
+              ${COMPACT ? `<span class="featured-dossier__cardcap">
+                <small class="mono-label">${esc(p.client)} · ${esc(p.categoryLabel)}</small>
+                <strong>${esc(p.title)}</strong>
+              </span>` : ''}
             </button>`).join('')}
             <div class="featured-dossier__caption" aria-live="polite">
               <small class="mono-label">Selected case study</small>
@@ -764,6 +775,16 @@
 
     const stepFeatured = direction => { SFX.flip(); renderFeatured(featuredActive + direction); };
 
+    // Compact stacks all four cards and each one carries its own
+    // data-case-open, so none of the coverflow plumbing below applies. It has
+    // to be skipped rather than merely ignored: the click handler calls
+    // stopPropagation on any non-active card, which would swallow the
+    // delegated case-study opener and strand three of the four clients.
+    // renderFeatured is skipped for the same reason — it strips
+    // data-case-open off every non-active card and writes into the
+    // brief/preview panels compact hides. The markup ships each card complete.
+    if (!COMPACT) {
+
     featuredDossier.addEventListener('click', e => {
       if (featuredDragged) {
         featuredDragged = false;
@@ -817,6 +838,8 @@
     }, { passive: true });
     featuredStage.addEventListener('pointercancel', () => { featuredDragged = false; }, { passive: true });
     renderFeatured(0);
+
+    }
   }
 
   /* ---------------- Services capability console ---------------- */
@@ -1370,12 +1393,6 @@
     items: gallerySource.items.map(item => item.cat === 'decks' ? orderedDecks[deckOrderIndex++] : item)
   };
   const railsWrap = doc.querySelector('[data-gallery-rails]');
-  // Below this width the gallery renders one repeated pattern (see shelfHTML)
-  // instead of nine bespoke coverflow stages. Read once at boot on purpose:
-  // initGallery installs listeners with no teardown path, so re-rendering on a
-  // resize would double-bind them. A window dragged across the line keeps the
-  // layout it loaded with.
-  const COMPACT = window.matchMedia('(max-width: 1100px)').matches;
   const galCatLabel = Object.fromEntries(GAL.categories);
   const galList = GAL.items; // lightbox order = rail order (category-major)
 
