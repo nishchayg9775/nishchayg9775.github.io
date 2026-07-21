@@ -7066,7 +7066,16 @@ html.no-motion [data-reveal] { opacity: 1; transform: none; }
 }
 .s-gallery .story-desk__board {
   grid-template-columns: minmax(220px, .52fr) minmax(0, 1.48fr);
-  min-height: 500px;
+  /* The stack, ghost sheets included, is 367px tall and the brief column
+     only holds 256px of content — 500px left ~133px of dead board under
+     both. 450 keeps roughly 40px of air above and below the stack. */
+  min-height: 450px;
+}
+/* top:49% centres the FRONT sheet, but the ghost sheets fan upward, so the
+   stack's visual mass sat 25px above that point: 36px of air above it and
+   97px below. 55% centres what the eye actually sees. */
+.s-gallery .story-desk__project {
+  top: 55%;
 }
 .s-gallery .story-desk__project {
   width: min(var(--story-width), 54.4%);
