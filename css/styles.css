@@ -135,6 +135,9 @@
   --glow-a: rgba(59, 118, 255, 0.12);
   --glow-b: rgba(122, 180, 255, 0.07);
   --grain-opacity: 0.14;
+  /* dimmest text tier — consumed in 29 places; without it those rules
+     inherited the parent colour and rendered brighter than --text-2 */
+  --text-3: #767e90;
 }
 
 :root[data-theme='light'] {
@@ -156,6 +159,7 @@
   --glow-a: rgba(30, 79, 216, 0.07);
   --glow-b: rgba(122, 180, 255, 0.06);
   --grain-opacity: 0.09;
+  --text-3: #656e80;
 }
 
 /* ---------- Reset / base ---------- */
@@ -205,6 +209,11 @@ strong { font-weight: 640; }
 ::-webkit-scrollbar-track { background: transparent; }
 
 /* ---------- Utilities ---------- */
+/* copy that only makes sense on one side of the compact boundary —
+   the compact half is switched on in the compact tier at the file end */
+.only-compact { display: none; }
+/* Compact-only quick-action dock; switched on in the compact tier. */
+.dock { display: none; }
 .mono-label {
   font-family: var(--font-mono);
   font-size: 0.68rem;
@@ -7609,4 +7618,423 @@ main > section[id] { scroll-margin-top: 82px; }
     padding-block: 6px;
     font-size: clamp(1.65rem, 8vw, 2.25rem);
   }
+}
+
+/* ============================================================
+   COMPACT TIER — phone + tablet (max-width: 1100px)
+   ------------------------------------------------------------
+   One boundary, chosen to match where the site already becomes
+   touch-first (the hamburger). Below it the page stops being nine
+   instruments you operate and becomes one dossier you read: same
+   Archivo/Fraunces/Space Mono voice, same hairlines, same accent,
+   same 01-10 section spine — fewer mechanisms.
+
+   The nine gallery rails have NO rules here on purpose. js/main.js
+   renders `.shelf` markup instead of `.rail--*` below 1100px, so
+   every desktop gallery selector simply stops matching. Nothing
+   above this line is edited; desktop is untouched by construction.
+   ============================================================ */
+@media (max-width: 1100px) {
+  /* Type flips as one unit. Previously the body scale changed at 760
+     and the heading scale at 640, so tablets rendered smaller type
+     than phones between those two widths. */
+  :root {
+    --type-h1-size: clamp(2.1rem, min(8.8vw, 10.5vh), 3.6rem);
+    --type-h2-size: clamp(1.9rem, 8.2vw, 2.9rem);
+    --type-h3-size: clamp(1.65rem, 7.2vw, 2.45rem);
+    --type-lead-size: 1rem;
+    --type-body-size: .875rem;
+    --type-support-size: .78rem;
+    --type-caption-size: .72rem;
+    --type-label-size: .6875rem;
+  }
+  /* 11px floor: the mono labels are the dossier voice, but 8-10px
+     uppercase mono in a dim grey is decoration, not information.
+     Doubled class clears the deliberate late override on .mono-label. */
+  .mono-label.mono-label { font-size: var(--type-label-size); letter-spacing: .1em; }
+  /* Same floor for the micro-type that never used the label token: case-file
+     dt/dd, the stat captions, the tag pills and the skill-list indices all
+     rendered at 6.4-7.7px, which is decoration pretending to be information. */
+  .featured-dossier__brief dt,
+  .featured-dossier__brief dd,
+  .featured-dossier__stats span,
+  .featured-dossier__tags .tag,
+  .skill-module li i,
+  .about-profile__foot small {
+    font-size: var(--type-label-size);
+    letter-spacing: .08em;
+  }
+  .featured-dossier__brief dd { letter-spacing: normal; }
+
+  /* ---------- Compact gallery: the shelf ---------- */
+  .shelf {
+    display: grid;
+    gap: 12px;
+    padding-block: clamp(20px, 4vw, 30px);
+    border-top: 1px solid var(--line);
+  }
+  .shelf:first-child { border-top: 0; }
+  .shelf__head { display: grid; gap: 7px; }
+  .shelf__eyebrow { color: var(--accent); }
+  .shelf__title {
+    font-family: var(--font-sans);
+    font-size: var(--type-h3-size);
+    font-weight: var(--type-weight-section);
+    font-stretch: 118%;
+    letter-spacing: -.03em;
+    line-height: .94;
+    text-transform: uppercase;
+  }
+  /* the Fraunces clause is the brand — it stays at every width */
+  .shelf__title em {
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-weight: 500;
+    font-stretch: normal;
+    text-transform: none;
+    letter-spacing: -.01em;
+    color: var(--accent);
+  }
+
+  /* Full-bleed snap track: the one touch-native mechanism already in
+     the codebase (the social carousel), generalised to every category. */
+  .shelf__track {
+    display: flex;
+    gap: 10px;
+    margin-inline: calc(var(--gutter, 20px) * -1);
+    padding-inline: var(--gutter, 20px);
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scroll-padding-inline: var(--gutter, 20px);
+    touch-action: pan-y;
+    overscroll-behavior-inline: contain;
+    scrollbar-width: none;
+  }
+  .shelf__track::-webkit-scrollbar { display: none; }
+  /* Uniform height, width follows the artwork's own ratio — a real contact
+     strip. Portraits and landscapes sit on one baseline, so the eye tracks
+     the work instead of a ragged edge, and a shelf costs ~110px less than a
+     fixed-width card forced to the tallest ratio. */
+  .shelf-card {
+    position: relative;
+    flex: 0 0 auto;
+    height: 290px;
+    width: auto;
+    max-width: 82vw;
+    aspect-ratio: var(--ar, 1);
+    scroll-snap-align: center;
+    overflow: hidden;
+    border: 1px solid var(--line-strong);
+    border-radius: 14px;
+    background: var(--bg-2);
+    text-align: left;
+  }
+  /* contain, never cover — the archive shows work uncropped */
+  .shelf-card img { width: 100%; height: 100%; object-fit: contain; }
+  .shelf-card__cap {
+    position: absolute;
+    inset-inline: 0;
+    bottom: 0;
+    padding: 24px 12px 10px;
+    color: #f2f4f8;
+    font-size: var(--type-caption-size);
+    line-height: 1.3;
+    background: linear-gradient(transparent, rgba(0, 0, 0, .85));
+  }
+  .shelf-card__pages {
+    position: absolute;
+    top: 9px;
+    right: 9px;
+    padding: 4px 8px;
+    border-radius: 999px;
+    background: var(--glass);
+    color: var(--text);
+    backdrop-filter: blur(6px);
+  }
+  .shelf__foot {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding-top: 11px;
+    border-top: 1px solid var(--line);
+  }
+  .shelf__bar { flex: 1; height: 1px; background: var(--line); }
+  .shelf__bar i {
+    display: block;
+    height: 100%;
+    background: var(--accent);
+    transform-origin: left;
+    transition: transform 240ms var(--ease-out);
+  }
+  .shelf__count b { color: var(--text); }
+  .shelf__all {
+    min-height: 44px;
+    padding: 9px 13px;
+    border: 1px solid var(--line-strong);
+    border-radius: 999px;
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: var(--type-label-size);
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .shelf__all:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+  /* Expanded: the same shelf flips in place to a contact sheet.
+     Hairline gutters and letterboxed tiles read as an archive sheet. */
+  .shelf.is-expanded .shelf__track {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 2px;
+    margin-inline: 0;
+    padding-inline: 0;
+    overflow: visible;
+  }
+  .shelf.is-expanded .shelf-card {
+    width: auto;
+    height: auto;
+    max-width: none;
+    aspect-ratio: 1;
+    border-radius: 3px;
+  }
+  .shelf.is-expanded .shelf-card__cap,
+  .shelf.is-expanded .shelf-card__pages { display: none; }
+  .shelf.is-expanded .shelf__bar,
+  .shelf.is-expanded .shelf__count { display: none; }
+
+  /* ---------- Chrome kill-list ----------
+     Every one of these is a desktop density device: a tab strip, a
+     progress hairline, a decorative coordinate, an orbit graphic.
+     At 375px they are illegible, and they are what makes the page
+     read as complicated. The content they gated is unhidden below. */
+  .about-story__tabs,
+  .about-story__progress,
+  .about-dossier__facts,
+  .featured-dossier__tabs,
+  .featured-dossier__progress,
+  .featured-dossier__coordinate,
+  .featured-dossier__grid,
+  .services-console__panel,
+  .services-console__number,
+  .process-board__progress,
+  .skill-atlas__core,
+  .skill-atlas__legend,
+  .career-ledger__progress,
+  .voices-stage__rail,
+  .voices-stage__progress,
+  .voices-stage__hint,
+  .footer__giant-wrap { display: none; }
+
+  /* ---------- Sections: stop hiding prose behind gestures ---------- */
+  /* About — three chapters stack as prose instead of tab-switching */
+  .about-dossier.is-enhanced .about-story__panels { display: block; }
+  .about-dossier.is-enhanced .about-chapter {
+    grid-area: auto;
+    min-height: 0;
+    opacity: 1;
+    visibility: visible;
+    transform: none;
+    pointer-events: auto;
+    transition: none;
+    border-top: 1px solid var(--line);
+  }
+  .about-dossier.is-enhanced .about-chapter:first-of-type { border-top: 0; }
+  .s-about__portrait-frame { width: 100%; max-width: none; }
+
+  /* Work — the artwork is the point; give it the full column.
+     Prefixed to out-rank the .s-featured compact block above. */
+  .s-featured .featured-dossier__board { display: block; }
+  .s-featured .featured-dossier__stage { display: block; min-height: 0; }
+  .s-featured .featured-dossier__card:not([data-position='0']) { display: none; }
+  .s-featured .featured-dossier__card[data-position='0'] {
+    position: static;
+    width: 100%;
+    transform: none;
+    opacity: 1;
+  }
+  .s-featured .featured-dossier__frame {
+    width: 100%;
+    max-width: none;
+    height: auto;
+    aspect-ratio: var(--featured-ar, 4 / 3);
+  }
+  .featured-dossier__open { min-height: 44px; }
+
+  /* Services — four open rows, no console pane, no toggle */
+  .services-console { display: block; min-height: 0; }
+  .services-console.is-enhanced .service__body {
+    grid-template-rows: 1fr;
+    opacity: 1;
+    transition: none;
+  }
+  .service__trigger i { display: none; }
+  .service__body-inner {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+    padding: 0 var(--gutter, 20px) 24px;
+  }
+  .service__tags { justify-content: flex-start; }
+
+  /* Process — five stacked rows, zero horizontal travel */
+  .process-board__viewport { overflow: visible; scroll-snap-type: none; }
+  .process-board__track { display: grid; grid-template-columns: minmax(0, 1fr); width: auto; }
+  .process-stage,
+  .process-stage.is-active {
+    flex-basis: auto;
+    width: auto;
+    /* 360px was a horizontal-track floor; stacked rows size to content */
+    min-height: 0;
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .process-stage:last-child { border-bottom: 0; }
+  .process-board.is-enhanced .process-stage:not(.is-active) .process-stage__detail {
+    max-height: 220px;
+    margin-top: 10px;
+    opacity: 1;
+    transform: none;
+  }
+  .process-stage__trigger { min-height: 0; }
+
+  /* Skills — all sixteen tools visible, no accordion */
+  .s-skills .skill-atlas__matrix { grid-template-columns: minmax(0, 1fr); }
+  .s-skills .skill-module ul,
+  .s-skills .skill-module.is-active ul {
+    max-height: none;
+    padding: 10px 20px 16px;
+    opacity: 1;
+    transition: none;
+  }
+
+  /* Experience — three open entries */
+  .s-experience .career-entry__story,
+  .s-experience .career-entry.is-active .career-entry__story {
+    max-height: none;
+    margin-top: 14px;
+    overflow: visible;
+    opacity: 1;
+    visibility: visible;
+    transition: none;
+  }
+  .s-experience .career-entry__trigger i { display: none; }
+  .s-experience .career-entry__trigger { min-height: 44px; }
+
+  /* Testimonials — three quotes stack */
+  .voices-stage.is-enhanced .voices-stage__quotes { display: block; }
+  .voices-stage.is-enhanced .voice {
+    grid-area: auto;
+    min-height: 0;
+    opacity: 1;
+    visibility: visible;
+    transform: none;
+    pointer-events: auto;
+    transition: none;
+  }
+
+  /* Contact + footer — the only section that never got compact padding */
+  .s-contact { padding-block: clamp(30px, 6vw, 48px); }
+  .footer__grid > nav.footer__col { display: none; }
+  .footer__cta { font-size: var(--type-h2-size); }
+
+  /* Gallery intro copy: the desktop sentence describes gestures that
+     do not exist down here. */
+  .only-wide { display: none; }
+  .only-compact { display: inline; }
+
+  /* ---------- Quick-action dock ---------- */
+  body { padding-bottom: 56px; }
+  .dock {
+    position: fixed;
+    inset-inline: 0;
+    bottom: 0;
+    z-index: 60;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    height: calc(56px + env(safe-area-inset-bottom));
+    padding: 0 var(--gutter) env(safe-area-inset-bottom);
+    border-top: 1px solid var(--line);
+    /* solid, not glass — the page already carries 20+ backdrop filters */
+    background: var(--bg);
+    transform: translateY(101%);
+    transition: transform 320ms var(--ease-out);
+  }
+  .dock.is-visible { transform: none; }
+  .dock__cta {
+    flex: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 44px;
+    border-radius: 999px;
+    background: var(--accent);
+    color: var(--accent-ink);
+    font-size: var(--type-button-size);
+    font-weight: 620;
+  }
+  .dock__menu {
+    display: inline-flex;
+    align-items: center;
+    padding-inline: 15px;
+    height: 44px;
+    border: 1px solid var(--line-strong);
+    border-radius: 999px;
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: var(--type-label-size);
+    letter-spacing: .1em;
+    text-transform: uppercase;
+  }
+  .dock__cta:focus-visible,
+  .dock__menu:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+  /* never sit on top of the open menu */
+  body.is-locked .dock { display: none; }
+}
+
+/* a 56px bar costs 9% of a 620px landscape viewport — not worth it */
+@media (max-width: 1100px) and (max-height: 620px) {
+  .dock { display: none; }
+  body { padding-bottom: 0; }
+}
+
+/* ---------- Tablet upgrade (641-1100px) ----------
+   Deliberately thin: a tablet is the phone composition with more
+   columns and a measure cap, never a third design. */
+@media (min-width: 641px) and (max-width: 1100px) {
+  .container { max-width: 860px; margin-inline: auto; }
+  .shelf-card { height: 360px; max-width: 62vw; }
+  .shelf.is-expanded .shelf__track { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .s-skills .skill-atlas__matrix { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .service__body-inner { grid-template-columns: minmax(0, 1.35fr) minmax(160px, .65fr); }
+}
+
+/* ---------- Touch targets: capability, not width ----------
+   Replaces two width-gated blocks that both evaporated above 861px,
+   i.e. exactly on the tablets that need them most. */
+@media (pointer: coarse) {
+  main button,
+  main a.btn,
+  .menu a,
+  .footer__link,
+  .footer__cta,
+  .s-contact__links a,
+  .dock a,
+  .dock button,
+  .career-entry__trigger,
+  .about-tab,
+  .voice-tab { min-height: 44px; }
+  main button:not(.shelf-card):not(.g-card):not([class*='__card']) { min-width: 44px; }
+}
+
+@media (max-width: 400px) {
+  .shelf__title,
+  .section-head__title,
+  .s-contact__title { overflow-wrap: anywhere; }
+  .shelf__foot { gap: 10px; }
+}
+
+@media (max-width: 1100px) and (prefers-reduced-motion: reduce) {
+  .shelf__bar i { transition: none; }
+  .shelf__track { scroll-behavior: auto; }
 }

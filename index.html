@@ -22,7 +22,7 @@
   <link rel="preload" href="assets/fonts/archivo-var.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="assets/fonts/fraunces-var-italic.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="assets/fonts/space-mono.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="css/styles.css?v=20260720-1">
+  <link rel="stylesheet" href="css/styles.css?v=20260721-4">
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
@@ -112,8 +112,11 @@
       <a href="#gallery" data-menu-link><span class="menu__index">03</span>Portfolio</a>
       <a href="#services" data-menu-link><span class="menu__index">04</span>Services</a>
       <a href="#process" data-menu-link><span class="menu__index">05</span>Process</a>
-      <a href="#experience" data-menu-link><span class="menu__index">06</span>Experience</a>
-      <a href="#contact" data-menu-link><span class="menu__index">07</span>Contact</a>
+      <a href="#skills" data-menu-link><span class="menu__index">06</span>Skills</a>
+      <a href="#experience" data-menu-link><span class="menu__index">07</span>Experience</a>
+      <a href="#testimonials" data-menu-link><span class="menu__index">08</span>Word of mouth</a>
+      <a href="#clients" data-menu-link><span class="menu__index">09</span>Brands</a>
+      <a href="#contact" data-menu-link><span class="menu__index">10</span>Contact</a>
     </nav>
     <div class="menu__foot">
       <a href="mailto:nishchayg9675@gmail.com">nishchayg9675@gmail.com</a>
@@ -171,8 +174,8 @@
         <div class="s-hero__foot">
           <p class="s-hero__sub" data-hero-sub>
             I design creatives that convert. Six years across fintech and publishing,
-            <strong>750+ shipped assets</strong>, every one built to move a number,
-            not decorate a feed. Currently senior graphic designer at Univest, Gurgaon.
+            every asset built to <strong>move a number</strong>, not decorate a feed.
+            Currently senior graphic designer at Univest, Gurgaon.
           </p>
           <div class="s-hero__cta" data-hero-cta>
             <a class="btn btn--fill btn--lg" href="#work" data-magnetic>View selected work<span class="btn__arrow">↓</span></a>
@@ -215,7 +218,7 @@
             </div>
             <div class="about-profile__foot">
               <div>
-                <span class="mono-label"><i aria-hidden="true"></i>Available for the right brief</span>
+                <span class="mono-label"><i aria-hidden="true"></i>Available for select projects</span>
                 <strong>Nishchay Gupta</strong>
                 <small>Senior Graphic Designer · Gurgaon</small>
               </div>
@@ -294,7 +297,7 @@
           <h2 class="section-head__title" data-split>
             The work, <em>all of it.</em>
           </h2>
-          <p class="section-head__note">The complete working archive. Every shipped piece, full-frame, nothing cropped. Drag a shelf, or click anything to view it big. Carousels and decks flip page by page.</p>
+          <p class="section-head__note">The complete working archive. Every shipped piece, full-frame, nothing cropped. <span class="only-wide">Drag a shelf, or click anything to view it big. Carousels and decks flip page by page.</span><span class="only-compact">Swipe a shelf, or tap any frame to open it full-screen.</span></p>
         </div>
         <div class="s-gallery__rails" data-gallery-rails>
           <!-- Category rails rendered by JS -->
@@ -854,10 +857,17 @@
     </div>
   </div>
 
+  <!-- Compact-only quick actions. The header hides on scroll-down and #contact
+       is ~14 screens from the top, so on a phone this is the conversion path. -->
+  <nav class="dock" data-dock aria-label="Quick actions">
+    <a class="dock__cta" href="mailto:nishchayg9675@gmail.com">Email Nishchay</a>
+    <button class="dock__menu" type="button" data-dock-menu aria-label="Open menu" aria-controls="mobile-menu">Menu</button>
+  </nav>
+
   <script src="js/vendor/gsap.min.js?v=3.13.0" defer></script>
   <script src="js/vendor/ScrollTrigger.min.js?v=3.13.0" defer></script>
   <script src="js/data.js?v=20260717-1" defer></script>
   <script src="js/gallery-data.js?v=20260720-1" defer></script>
-  <script src="js/main.js?v=20260720-1" defer></script>
+  <script src="js/main.js?v=20260721-1" defer></script>
 </body>
 </html>

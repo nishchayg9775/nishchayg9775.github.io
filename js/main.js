@@ -88,10 +88,14 @@
   const mainEl = doc.querySelector('main');
   const footerEl = doc.querySelector('.footer');
   let lastY = 0;
+  // the compact dock carries the two actions a visitor needs from anywhere;
+  // it only earns its 56px once they are past the hero and committed
+  const dock = doc.querySelector('[data-dock]');
   const onScrollHeader = y => {
     header.classList.toggle('is-scrolled', y > 30);
     if (y > 140 && y > lastY + 4 && !doc.body.classList.contains('is-locked')) header.classList.add('is-hidden');
     else if (y < lastY - 4 || y <= 140) header.classList.remove('is-hidden');
+    dock && dock.classList.toggle('is-visible', y > 700);
     lastY = y;
   };
   window.addEventListener('scroll', () => onScrollHeader(window.scrollY), { passive: true });
@@ -134,6 +138,9 @@
     menuBtn.focus({ preventScroll: true });
   }
   menuBtn.addEventListener('click', () => (menu.classList.contains('is-open') ? closeMenu() : openMenu()));
+  // dock reuses the one menu instance rather than owning any state of its own
+  const dockMenuBtn = doc.querySelector('[data-dock-menu]');
+  dockMenuBtn && dockMenuBtn.addEventListener('click', openMenu);
 
   /* ---------------- Custom cursor ---------------- */
   const cursor = doc.querySelector('.cursor');
@@ -1363,6 +1370,12 @@
     items: gallerySource.items.map(item => item.cat === 'decks' ? orderedDecks[deckOrderIndex++] : item)
   };
   const railsWrap = doc.querySelector('[data-gallery-rails]');
+  // Below this width the gallery renders one repeated pattern (see shelfHTML)
+  // instead of nine bespoke coverflow stages. Read once at boot on purpose:
+  // initGallery installs listeners with no teardown path, so re-rendering on a
+  // resize would double-bind them. A window dragged across the line keeps the
+  // layout it loaded with.
+  const COMPACT = window.matchMedia('(max-width: 1100px)').matches;
   const galCatLabel = Object.fromEntries(GAL.categories);
   const galList = GAL.items; // lightbox order = rail order (category-major)
 
@@ -1455,7 +1468,7 @@
             <h4 data-new-work-title>${esc(initialTitle)}</h4>
             <p>Selected from the latest visual systems, campaign experiments and shipped brand moments.</p>
           </div>
-          <button class="new-work-reel__open" type="button" data-new-work-open data-gal-open="${esc(items[0].id)}">
+          <button class="new-work-reel__open" type="button" data-new-work-open data-gal-open="${esc(items[0].id)}" aria-label="Open selected work">
             <span>Open selected work</span><i aria-hidden="true">↗</i>
           </button>
         </aside>
@@ -1521,7 +1534,7 @@
               <button type="button" data-story-prev aria-label="Previous case study">←</button>
               <button type="button" data-story-next aria-label="Next case study">→</button>
             </div>
-            <button class="story-desk__open" type="button" data-story-open data-gal-open="${esc(initial.id)}">
+            <button class="story-desk__open" type="button" data-story-open data-gal-open="${esc(initial.id)}" aria-label="Open sequence">
               <span>Open sequence</span><i aria-hidden="true">↗</i>
             </button>
           </div>
@@ -1642,7 +1655,7 @@
               <div><dt>Length</dt><dd data-deck-slide-count>${String(initialCount).padStart(2, '0')} slides</dd></div>
               <div><dt>Format</dt><dd data-deck-format>${initialW > initialH ? 'Widescreen' : 'Portrait'}</dd></div>
             </dl>
-            <button class="deck-room__open" type="button" data-deck-open data-gal-open="${esc(initial.id)}">
+            <button class="deck-room__open" type="button" data-deck-open data-gal-open="${esc(initial.id)}" aria-label="Review full deck">
               <span>Review full deck</span><i aria-hidden="true">↗</i>
             </button>
           </aside>
@@ -1981,12 +1994,101 @@
       </div>
     </section>`;
 
+  /* ---------------- Compact gallery (≤1100px) ----------------
+     Nine bespoke stages become one repeated sentence: eyebrow, headline with
+     its Fraunces clause, a snapping shelf of uncropped frames, a hairline and
+     a counter. The voice below is lifted verbatim from the nine desktop rails
+     so the compact layer reads as the same site, not a stripped fallback.
+     Kept here and never in js/gallery-data.js, which build_gallery.py rewrites. */
+  const RAIL_VOICE = {
+    'new-work':  { eyebrow: 'Fresh output',            head: 'New work',    em: 'in motion.' },
+    social:      { eyebrow: 'Curated feed studio',     head: 'Social media', em: 'posts' },
+    carousels:   { eyebrow: 'Narrative systems',       head: 'Carousels',   em: '&amp; case studies' },
+    decks:       { eyebrow: 'Presentation systems',    head: 'Decks',       em: '&amp; presentations' },
+    'ai-ads':    { eyebrow: 'AI ad campaigns',         head: 'Parachute',   em: 'visual worlds' },
+    festivals:   { eyebrow: 'Cultural calendar',       head: 'Festival',    em: '&amp; moment posts' },
+    thumbnails:  { eyebrow: 'Editorial video',         head: 'YouTube',     em: 'thumbnails' },
+    flyers:      { eyebrow: 'Print editions',          head: 'Flyers',      em: '&amp; posters' },
+    interior:    { eyebrow: 'Spatial brand systems',   head: 'Interior',    em: '&amp; real estate' }
+  };
+
+  const shelfCardHTML = it => {
+    // same source as the rails: small thumb here, full resolution in the lightbox
+    const [src, w, h] = it.thumb || it.cover;
+    const pages = it.pages ? it.pages.length : 1;
+    return `
+      <button class="shelf-card" data-gal-open="${esc(it.id)}" style="--ar: ${w} / ${h}"
+        aria-label="View: ${esc(it.title)}${pages > 1 ? ` — ${pages} pages` : ''}">
+        <img src="${encodeURI(src)}" alt="" width="${w}" height="${h}" loading="lazy" decoding="async">
+        ${pages > 1 ? `<span class="shelf-card__pages mono-label">${String(pages).padStart(2, '0')} ${it.cat === 'carousels' ? 'slides' : 'pages'}</span>` : ''}
+        <span class="shelf-card__cap">${esc(it.title)}</span>
+      </button>`;
+  };
+
+  const shelfHTML = (key, label, items, index) => {
+    const voice = RAIL_VOICE[key] || { eyebrow: label, head: label, em: '' };
+    const total = String(items.length).padStart(2, '0');
+    return `
+      <section class="shelf" data-shelf data-reveal aria-labelledby="shelf-${esc(key)}-title">
+        <header class="shelf__head">
+          <span class="mono-label shelf__eyebrow">${String(index + 1).padStart(2, '0')} · ${esc(voice.eyebrow)}</span>
+          <h3 class="shelf__title" id="shelf-${esc(key)}-title">${esc(voice.head)} <em>${voice.em}</em></h3>
+        </header>
+        <div class="shelf__track" data-shelf-track role="group"
+          aria-label="${esc(label)} — ${items.length} pieces, scroll sideways">
+          ${items.map(shelfCardHTML).join('')}
+        </div>
+        <footer class="shelf__foot">
+          <span class="shelf__bar" aria-hidden="true"><i data-shelf-bar></i></span>
+          <span class="mono-label shelf__count" aria-live="polite"><b data-shelf-current>01</b> / ${total}</span>
+          <button class="shelf__all" data-shelf-expand aria-expanded="false">View all ${total}</button>
+        </footer>
+      </section>`;
+  };
+
+  const initShelves = () => {
+    railsWrap.querySelectorAll('[data-shelf-track]').forEach(track => {
+      const cards = [...track.children];
+      const readout = track.parentElement.querySelector('[data-shelf-current]');
+      const bar = track.parentElement.querySelector('[data-shelf-bar]');
+      if (!cards.length || !readout || !bar) return;
+      let raf = null;
+      const sync = () => {
+        raf = null;
+        // nearest card to the viewport centre — accurate regardless of card widths
+        const mid = track.scrollLeft + track.clientWidth / 2;
+        let best = 0, bestGap = Infinity;
+        cards.forEach((card, i) => {
+          const gap = Math.abs(card.offsetLeft + card.offsetWidth / 2 - mid);
+          if (gap < bestGap) { bestGap = gap; best = i; }
+        });
+        readout.textContent = String(best + 1).padStart(2, '0');
+        bar.style.transform = `scaleX(${(best + 1) / cards.length})`;
+      };
+      track.addEventListener('scroll', () => { if (!raf) raf = requestAnimationFrame(sync); }, { passive: true });
+      sync();
+    });
+
+    railsWrap.addEventListener('click', event => {
+      const toggle = event.target.closest('[data-shelf-expand]');
+      if (!toggle) return;
+      const shelf = toggle.closest('.shelf');
+      const open = shelf.classList.toggle('is-expanded');
+      toggle.setAttribute('aria-expanded', String(open));
+      const total = shelf.querySelectorAll('.shelf-card').length;
+      toggle.textContent = open ? 'Collapse' : `View all ${String(total).padStart(2, '0')}`;
+      // the shelf just changed height — every trigger below it moved
+      requestAnimationFrame(() => ScrollTrigger.refresh());
+    });
+  };
+
   const initGallery = () => {
     if (!railsWrap || !GAL.items.length || railsWrap.dataset.galleryReady === 'true') return;
     railsWrap.dataset.galleryReady = 'true';
-    railsWrap.innerHTML = GAL.categories.map(([key, label]) => {
+    railsWrap.innerHTML = GAL.categories.map(([key, label], index) => {
       const items = GAL.items.filter(it => it.cat === key);
       if (!items.length) return '';
+      if (COMPACT) return shelfHTML(key, label, items, index);
       if (key === 'new-work') return newWorkShowcaseHTML(items, label);
       if (key === 'ai-ads') return aiShowcaseHTML(items, label);
       if (key === 'carousels') return carouselShowcaseHTML(items, label);
@@ -2014,6 +2116,11 @@
           </div>
         </div>`;
     }).join('');
+
+    // Compact renders shelves, so none of the nine stage engines below have a
+    // DOM to bind to. Returning here keeps them from running at all rather than
+    // relying on nine separate null guards.
+    if (COMPACT) { initShelves(); return; }
 
     // New Work is a curated studio reel: one clear focal frame with nearby
     // pieces kept visible for context. Side cards select; the centre opens.
@@ -3239,9 +3346,12 @@
   let lbIndex = 0;
   let lbLastFocus = null;
 
-  const lbBuildFlat = () => {
+  // cat scopes the viewer to one category. Compact passes it so the counter
+  // reads "03 / 20" and swiping past the last deck doesn't land in thumbnails;
+  // desktop passes nothing and keeps the full 399-frame archive order.
+  const lbBuildFlat = cat => {
     lbFlat = [];
-    galList.forEach(it => {
+    (cat ? galList.filter(it => it.cat === cat) : galList).forEach(it => {
       const pages = it.pages || [it.cover];
       pages.forEach((pg, pi) => lbFlat.push({
         src: pg[0], title: it.title, cat: galCatLabel[it.cat] || '',
@@ -3276,7 +3386,8 @@
 
   const openLb = id => {
     initGallery();
-    lbBuildFlat();
+    const seed = galList.find(it => it.id === id);
+    lbBuildFlat(COMPACT && seed ? seed.cat : null);
     const at = lbFlat.findIndex(en => en.id === id);
     if (at < 0) return;
     SFX.open();
