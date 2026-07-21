@@ -2016,7 +2016,10 @@ html.no-motion .swi { transform: none !important; }
   position: absolute;
   left: 7%;
   right: 7%;
-  bottom: 14%;
+  /* The deck is centred on top:48% and sized by its own artwork, so at 14%
+     the active deck's bottom edge crossed this line by a few px and the two
+     read as touching. 8% keeps the horizon behind the deck, not against it. */
+  bottom: 8%;
   height: 1px;
   background: linear-gradient(90deg, transparent, var(--line-strong) 14% 86%, transparent);
 }
