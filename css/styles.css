@@ -5350,6 +5350,88 @@ html.sfx-off .sound-toggle__mute { display: block; }
 }
 .s-contact__links a:hover::after { background: var(--accent); }
 
+/* ---------- Contact: two-column close (desktop only) ----------
+   The empty right half was never a missing column — .s-contact is
+   just `text-align: left`. The void is manufactured by the 12ch cap
+   on the title and the 46ch cap on the sub above. Both are relaxed
+   here and a closing reference rail is hung off a full-height
+   hairline. This block must stay BELOW those two rules: it wins on
+   source order, not specificity. */
+.s-contact__witness { display: none; }
+
+/* 1100.02px, not 1101px: browser zoom and fractional DPR land in the
+   1100.01-1100.99 band where neither max-1100 nor min-1101 matches,
+   and the section would silently fall back to one column. */
+@media (min-width: 1100.02px) {
+  .s-contact__grid {
+    display: grid;
+    /* minmax(0, 1fr): .btn is white-space: nowrap, so the email
+       button is a rigid block that would otherwise push its track
+       past its share and overflow the container. */
+    grid-template-columns: minmax(0, 1fr) minmax(280px, 390px);
+    gap: clamp(40px, 4.4vw, 92px);
+    /* stretch is what lets the rail's border-left run the full
+       height of the taller left column; the rail bottom-weights
+       itself with align-content so the hairline still spans. */
+    align-items: stretch;
+  }
+  .s-contact__lede { min-width: 0; }
+
+  .s-contact__title { max-width: min(15ch, 100%); }
+  .s-contact__sub { max-width: 42ch; }
+
+  .s-contact__witness {
+    display: grid;
+    /* space-between, not end — `end` would leave a bare stretch of
+       hairline above the eyebrow, i.e. a fresh empty rectangle in a
+       section whose whole complaint is that it looks empty. */
+    align-content: space-between;
+    gap: clamp(24px, 2.4vw, 40px);
+    padding: 4px 0 4px clamp(22px, 2.2vw, 34px);
+    border-left: 1px solid var(--line-strong);
+  }
+  /* explicit sizes: --type-label-size resolves to its 8.96px floor
+     at this viewport, which is below the legibility floor for the
+     line that certifies the quote */
+  .s-contact__witness-label {
+    font-size: .66rem;
+    letter-spacing: .18em;
+    color: var(--text-2);
+  }
+  .witness { display: grid; gap: clamp(10px, 1vw, 16px); }
+  /* accent is this site's clickable signal, so the mark is kept
+     small and desaturated — a big saturated glyph one gap from the
+     mailto reads as a second thing to click */
+  .witness__mark {
+    color: color-mix(in srgb, var(--accent) 70%, transparent);
+    font-family: var(--font-serif);
+    font-size: clamp(2rem, 2.5vw, 2.6rem);
+    font-style: italic;
+    line-height: .62;
+    transform: translateY(.06em);
+  }
+  /* title-md, not title-lg: at lg the quote outsizes the button text
+     and pulls the eye before the reader reaches the CTA */
+  .witness__quote {
+    font-family: var(--font-display);
+    font-size: var(--type-title-md-size);
+    font-weight: 610;
+    font-stretch: 108%;
+    line-height: 1.18;
+    letter-spacing: -.025em;
+    color: var(--text);
+    text-wrap: balance;
+  }
+  .witness__by {
+    display: grid;
+    gap: 5px;
+    padding-top: clamp(10px, 1vw, 14px);
+    border-top: 1px solid var(--line);
+  }
+  .witness__name { font-size: .95rem; font-weight: 680; color: var(--text); }
+  .witness__role { font-size: .72rem; color: var(--text-2); }
+}
+
 /* ---------- Footer ---------- */
 .footer {
   position: relative; z-index: var(--z-content);
