@@ -7197,6 +7197,13 @@ html.no-motion [data-reveal] { opacity: 1; transform: none; }
 .s-gallery .interior-dossier__stage {
   min-height: 500px;
 }
+/* The caption sits bottom-RIGHT and clears the active card horizontally
+   (card ends at x567, caption starts at x757), so the card does not need to
+   be biased upward for it. At 45% it sat 30px from the top and 80px from the
+   floor; 50% centres it properly. */
+.s-gallery .interior-dossier__card {
+  top: 50%;
+}
 .s-gallery .interior-dossier__brief {
   padding: 22px 24px 20px 0;
 }
