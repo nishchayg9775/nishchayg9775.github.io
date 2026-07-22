@@ -7932,19 +7932,33 @@ main > section[id] { scroll-margin-top: 82px; }
   .about-dossier.is-enhanced .about-chapter:first-of-type { border-top: 0; }
   .s-about__portrait-frame { width: 100%; max-width: none; }
 
-  /* Work — all four case files stack, each one tappable straight into its own
-     case study. The desktop coverflow needs its tab strip to switch cases, and
-     the tab strip is chrome we drop down here — so hiding the inactive cards
-     as well would strand three of the four clients with no way to reach them. */
+  /* Work — all four case files on one swipe track, each tapping straight into
+     its own case study. Same grammar as the gallery shelves: full-bleed snap
+     track, the next card peeking at the edge as the affordance, tap to open.
+     The desktop coverflow needs its tab strip to switch cases and that strip is
+     chrome we drop down here, so the cards have to carry their own way in. */
   .s-featured .featured-dossier__board { display: block; }
   .s-featured .featured-dossier__stage {
-    display: grid;
-    gap: 14px;
+    display: flex;
+    gap: 10px;
     min-height: 0;
+    margin-inline: calc(var(--gutter, 20px) * -1);
+    padding-inline: var(--gutter, 20px);
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x mandatory;
+    scroll-padding-inline: var(--gutter, 20px);
+    /* auto, never pan-y — see the note on .shelf__track */
+    touch-action: auto;
+    overscroll-behavior-inline: contain;
+    scrollbar-width: none;
   }
+  .s-featured .featured-dossier__stage::-webkit-scrollbar { display: none; }
   .s-featured .featured-dossier__card {
     position: static;
-    width: 100%;
+    flex: 0 0 auto;
+    width: min(78vw, 330px);
+    scroll-snap-align: center;
     transform: none;
     opacity: 1;
     filter: none;
@@ -7970,8 +7984,19 @@ main > section[id] { scroll-margin-top: 82px; }
      meaningless once all four are on screen; the full detail is one tap away */
   .s-featured .featured-dossier__brief,
   .s-featured .featured-dossier__preview,
-  .s-featured .featured-dossier__caption,
-  .s-featured .featured-dossier__footer { display: none; }
+  .s-featured .featured-dossier__caption { display: none; }
+  /* the footer's hint line earns its place again now that the stage swipes;
+     its progress bar does not — renderFeatured never runs down here, so the
+     bar would sit frozen at one quarter forever */
+  .s-featured .featured-dossier__footer {
+    display: block;
+    margin-top: 13px;
+  }
+  .s-featured .featured-dossier__progress { display: none; }
+  .s-featured .featured-dossier__footer p {
+    color: var(--text-2);
+    font-size: var(--type-caption-size);
+  }
 
   /* Services — four open rows, no console pane, no toggle */
   .services-console { display: block; min-height: 0; }
