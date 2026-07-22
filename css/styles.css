@@ -7800,7 +7800,14 @@ main > section[id] { scroll-margin-top: 82px; }
     overflow-x: auto;
     scroll-snap-type: x mandatory;
     scroll-padding-inline: var(--gutter, 20px);
-    touch-action: pan-y;
+    /* MUST stay auto. The desktop stages use `touch-action: pan-y` because
+       they are JS pointer carousels that need vertical page scroll to pass
+       through. This is a NATIVE overflow-x scroller, and pan-y on a native
+       scroller tells the browser to ignore horizontal touch entirely — the
+       shelf then scrolls with a wheel or arrow keys but never with a finger.
+       `auto` lets the browser read the gesture: mostly-horizontal scrolls the
+       shelf, mostly-vertical scrolls the page. */
+    touch-action: auto;
     overscroll-behavior-inline: contain;
     scrollbar-width: none;
   }
