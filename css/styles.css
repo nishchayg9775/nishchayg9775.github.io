@@ -7734,6 +7734,12 @@ main > section[id] { scroll-margin-top: 82px; }
      uppercase mono in a dim grey is decoration, not information.
      Doubled class clears the deliberate late override on .mono-label. */
   .mono-label.mono-label { font-size: var(--type-label-size); letter-spacing: .1em; }
+
+  /* One section rhythm. The compact paddings were applied section by section
+     across five separate media queries (640 / 680 / 720 / 760) and #clients
+     was never added to any of them, so it ran at 65px top and bottom against
+     everyone else's 28 — a double-height band around 126px of content. */
+  main > section:not(.s-hero) { padding-block: 28px; }
   /* Same floor for the micro-type that never used the label token: case-file
      dt/dd, the stat captions, the tag pills and the skill-list indices all
      rendered at 6.4-7.7px, which is decoration pretending to be information. */
@@ -7755,7 +7761,8 @@ main > section[id] { scroll-margin-top: 82px; }
   .shelf {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto auto;
-    gap: 8px 10px;
+    /* row gap was 8px, which put a two-line headline almost on the artwork */
+    gap: 13px 10px;
     padding-block: 14px;
     border-top: 1px solid var(--line);
   }
@@ -8005,6 +8012,10 @@ main > section[id] { scroll-margin-top: 82px; }
   /* Skills — all sixteen tools visible, no accordion. The "active lens" pane
      reprints module 01's heading and copy, which is useful when only one
      module is open and pure duplication once all four are. */
+  /* The head held only the active-lens pane and the legend, and both are
+     hidden down here — leaving a genuinely empty 108px bordered box above
+     the first module. Nothing left to show, so the box goes too. */
+  .s-skills .skill-atlas__head { display: none; }
   .s-skills .skill-atlas__active { display: none; }
   .s-skills .skill-atlas__matrix { grid-template-columns: minmax(0, 1fr); }
   .s-skills .skill-module ul,
@@ -8042,7 +8053,6 @@ main > section[id] { scroll-margin-top: 82px; }
   }
 
   /* Contact + footer — the only section that never got compact padding */
-  .s-contact { padding-block: clamp(30px, 6vw, 48px); }
   .footer__grid > nav.footer__col { display: none; }
   .footer__cta { font-size: var(--type-h2-size); }
 
